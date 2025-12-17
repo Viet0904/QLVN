@@ -16,4 +16,8 @@
     <Folder Include="wwwroot\icon\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\QLVN-Contracts\QLVN-Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

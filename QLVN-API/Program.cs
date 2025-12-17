@@ -20,6 +20,8 @@ builder.Services.AddDbContext<QlvnDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
+builder.Services.AddScoped<IUserService, UserService>();
+
 // 3. Đăng ký Application Services
 builder.Services.AddScoped<DvsdService, DvsdService>();
 

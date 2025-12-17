@@ -3,10 +3,11 @@ using QLVN_Application.Interfaces;
 using QLVN_Contracts.Dtos.User;
 namespace QLVN_API.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class UserController : Controller
     {
-        [Route("api/[controller]")]
-        [ApiController]
+        
         private readonly IUserService _userService;
         public UserController(IUserService uservice)
         {

@@ -27,7 +27,7 @@ namespace QLVN_Application.Services
         }
         public async Task<UserDto?> GetByIdAsync(string id)
         {
-            return throw new NotImplementedException();
+            throw new NotImplementedException();
         }
         public async Task CreateAsync(CreateUserRequest request)
         {
@@ -42,10 +42,10 @@ namespace QLVN_Application.Services
         }
         public async Task UpdateAsync(string id, UpdateUserRequest request)
         {
-            return throw new NotImplementedException();
+            throw new NotImplementedException();
         }
-        public async Task DeleteAsync(string id) { 
-            return throw new NotImplementedException();
+        public async Task DeleteAsync(string id) {
+            throw new NotImplementedException();
         }
 
         

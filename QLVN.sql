@@ -29,7 +29,7 @@ CREATE TABLE [dbo].[UsUser](
     [Name] [nvarchar](100) NOT NULL,
     [Gender] [int] NULL,
     [UserName] [nvarchar](10) NOT NULL,
-    [Password] [nvarchar](50) NOT NULL,
+    [Password] [nvarchar](200) NOT NULL,
     [Email] [nvarchar](30) NULL,
     [Phone] [nvarchar](50) NULL,
     [CMND] [nvarchar](20) NULL,

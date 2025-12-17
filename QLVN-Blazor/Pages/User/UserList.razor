@@ -1,0 +1,46 @@
+﻿@page "/users"
+@using QLVN_Contracts.Dtos.User
+@using QLVN_Blazor.Services
+@inject UserApiClient UserService
+
+<h3>Danh sách người dùng</h3>
+
+@if (users == null)
+{
+    <p><em>Đang tải...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Họ và Tên</th>
+                <th>UserName</th>
+                <th>Nhóm</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Name</td>
+                    <td>@user.UserName</td>
+                    <td>@user.GroupId</td>
+                    <td>@user.RowStatus</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UserDto>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetUserAllSync();
+    }
+}
