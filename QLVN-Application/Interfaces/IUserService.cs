@@ -1,4 +1,5 @@
-﻿using QLVN_Contracts.Dtos.User;
+﻿using QLVN_Contracts.Dtos.Auth;
+using QLVN_Contracts.Dtos.User;
 
 namespace QLVN_Application.Interfaces
 {
@@ -9,5 +10,8 @@ namespace QLVN_Application.Interfaces
         Task CreateAsync(CreateUserRequest request);
         Task UpdateAsync(string id, UpdateUserRequest request); // Bạn cần tạo thêm UpdateUserRequest nhé
         Task DeleteAsync(string id);
+
+        // Hàm xử lý Login
+        Task<LoginResponse> LoginAsync(LoginRequest request);
     }
 }

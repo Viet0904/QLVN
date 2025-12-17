@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\QLVN-Contracts\QLVN-Contracts.csproj" />
+    <ProjectReference Include="..\QLVN-Library\QLVN-Library.csproj" />
   </ItemGroup>
 
 </Project>
