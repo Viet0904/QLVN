@@ -1,4 +1,30 @@
+﻿using QLVN_Domain.Interfaces;
+using QLVN_Infrastructure; // Chứa DbContext
+using QLVN_Infrastructure.Repositories;
+using QLVN_Application.Interfaces;
+using QLVN_Application.Services;
+using QLVN_Application.Mappings;
+using Microsoft.EntityFrameworkCore;
+
+
+
+
 var builder = WebApplication.CreateBuilder(args);
+
+// 1. Kết nối DB
+builder.Services.AddDbContext<QlvnDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+// 2. Đăng ký Repository & UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+// 3. Đăng ký Application Services
+builder.Services.AddScoped<DvsdService, DvsdService>();
+
+// 4. Đăng ký AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Add services to the container.
 

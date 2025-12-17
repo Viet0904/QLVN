@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using QLVN_Infrastructure.Entities;
-
+using QLVN_Domain.Entities;
 namespace QLVN_Infrastructure;
 
 public partial class QlvnDbContext : DbContext

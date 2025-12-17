@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\QLVN-Application\QLVN-Application.csproj" />
     <ProjectReference Include="..\QLVN-Infrastructure\QLVN-Infrastructure.csproj" />
     <ProjectReference Include="..\QLVN-Library\QLVN-Library.csproj" />
   </ItemGroup>

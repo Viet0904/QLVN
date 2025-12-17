@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace QLVN_Infrastructure.Entities;
+namespace QLVN_Domain.Entities;
 
 public partial class DbAoNuoiNhapKc
 {
