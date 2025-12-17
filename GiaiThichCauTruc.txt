@@ -1,0 +1,27 @@
+QLVN.sln
+│
+├── 0. Common (Dùng chung cho TẤT CẢ)
+│   └── QLVN.Library          
+│       ├── Helpers           (StringHelper, DateTimeHelper)
+│       ├── Extensions        (ObjectExtensions, ListExtensions)
+│       └── Constants         (SystemConstants, ErrorMessages)
+│
+├── 1. Shared (Chia sẻ dữ liệu)
+│   └── QLVN.Contracts        <-- (Chứa DTOs như đã bàn ở bước trước)
+│       └── DTOs              (ProductDto, LoginRequest...)
+│
+├── 2. Core (Lõi nghiệp vụ)
+│   ├── QLVN.Domain           (Entities từ Database First)
+│   │
+│   └── QLVN.Application      (Logic nghiệp vụ)
+│       ├── Interfaces
+│       └── Services
+│
+├── 3. Infrastructure (Hạ tầng)
+│   └── QLVN.Infrastructure   (DbContext, Repositories)
+│
+├── 4. Presentation (API)
+│   └── QLVN.API              (Controllers)
+│
+└── 5. Client (Giao diện)
+    └── QLVN.Blazor           (Web App)
