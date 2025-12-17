@@ -1,13 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36804.6 d17.14
+VisualStudioVersion = 17.14.36804.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-API", "QLVN-API\QLVN-API.csproj", "{58094924-B99B-44B2-939E-8D15C3B17B41}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Blazor", "QLVN-Blazor\QLVN-Blazor.csproj", "{3F36F8F6-454E-4048-BC4B-DE09BA3B725A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Library", "QLVN-Library\QLVN-Library.csproj", "{4EBCC1BF-143F-455A-A805-DA5642952443}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Contracts", "QLVN-Contracts\QLVN-Contracts.csproj", "{25C7A50F-3C90-4FE0-ABBE-23FD3E717942}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Domain", "QLVN-Domain\QLVN-Domain.csproj", "{CFA74785-80C9-4E19-B67D-4106D442DCB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Application", "QLVN-Application\QLVN-Application.csproj", "{06471B93-9C79-4391-A940-DAFB1216E77A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLVN-Infrastructure", "QLVN-Infrastructure\QLVN-Infrastructure.csproj", "{AF8D4983-254A-4379-90AD-9B4BD4A21F03}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +35,22 @@ Global
 		{4EBCC1BF-143F-455A-A805-DA5642952443}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EBCC1BF-143F-455A-A805-DA5642952443}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4EBCC1BF-143F-455A-A805-DA5642952443}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25C7A50F-3C90-4FE0-ABBE-23FD3E717942}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25C7A50F-3C90-4FE0-ABBE-23FD3E717942}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25C7A50F-3C90-4FE0-ABBE-23FD3E717942}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25C7A50F-3C90-4FE0-ABBE-23FD3E717942}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFA74785-80C9-4E19-B67D-4106D442DCB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFA74785-80C9-4E19-B67D-4106D442DCB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFA74785-80C9-4E19-B67D-4106D442DCB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFA74785-80C9-4E19-B67D-4106D442DCB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06471B93-9C79-4391-A940-DAFB1216E77A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06471B93-9C79-4391-A940-DAFB1216E77A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06471B93-9C79-4391-A940-DAFB1216E77A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06471B93-9C79-4391-A940-DAFB1216E77A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF8D4983-254A-4379-90AD-9B4BD4A21F03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF8D4983-254A-4379-90AD-9B4BD4A21F03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF8D4983-254A-4379-90AD-9B4BD4A21F03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF8D4983-254A-4379-90AD-9B4BD4A21F03}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
