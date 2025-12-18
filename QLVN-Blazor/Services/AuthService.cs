@@ -27,7 +27,7 @@ namespace QLVN_Blazor.Services
                 // Lưu token vào LocalStorage
                 await _localStorage.SetItemAsync("authToken", result!.Token);
 
-                // Báo cho Blazor biết đã đăng nhập (Cần ép kiểu về CustomAuthProvider ở bước dưới)
+                // Thông Báo cho Blazor biết đã đăng nhập (Cần ép kiểu về CustomAuthProvider ở bước dưới)
                 ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated(result.Token);
 
                 return result;
@@ -35,7 +35,7 @@ namespace QLVN_Blazor.Services
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                throw new Exception(error); // Hoặc xử lý lỗi đẹp hơn
+                throw new Exception(error); 
             }
         }
 

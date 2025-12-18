@@ -12,6 +12,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorOrigin",
+        policy => policy
+            // Cho phép các Port của Blazor truy cập (Lấy từ launchSettings của Blazor)
+            .WithOrigins("https://localhost:7096", "http://localhost:5273")
+            .AllowAnyMethod() // Cho phép GET, POST, PUT, DELETE...
+            .AllowAnyHeader()); // Cho phép gửi Token header
+});
 // Cấu hình JWT
 builder.Services.AddAuthentication(options =>
 {
@@ -65,6 +74,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// 2. KÍCH HOẠT CORS
+app.UseCors("AllowBlazorOrigin");
+
 app.UseAuthentication(); // Xác thực
 app.UseAuthorization();
 
