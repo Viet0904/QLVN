@@ -89,6 +89,15 @@ CREATE TABLE [dbo].[UsGridLayout](
 )
 GO
 
+
+CREATE TABLE [dbo].[UsUserConfig](
+    [UserId] [nvarchar](8) NOT NULL PRIMARY KEY,
+    [Settings] [nvarchar](MAX) NOT NULL, -- Lưu toàn bộ setting ở đây dạng chuỗi JSON
+    [UpdatedAt] [datetime] DEFAULT GETDATE(),
+	[CreatedAt] [datetime] DEFAULT GETDATE()
+)
+GO
+
 CREATE TABLE [dbo].[SysSetting](
     [Key] [nvarchar](30) NOT NULL PRIMARY KEY,
     [Description] [nvarchar](100) NULL,
@@ -523,7 +532,10 @@ ALTER TABLE [dbo].[UsGridLayout] ADD CONSTRAINT [FK_UsGridLayout_UsUser] FOREIGN
 ALTER TABLE [dbo].[UsUserLog] ADD CONSTRAINT [FK_UsUserLog_UsUser] FOREIGN KEY([UserId]) REFERENCES [dbo].[UsUser] ([Id])
 ALTER TABLE [dbo].[UsUserPermission] ADD CONSTRAINT [FK_UsUserPermission_SysMenu] FOREIGN KEY([MenuId]) REFERENCES [dbo].[SysMenu] ([Name])
 ALTER TABLE [dbo].[UsUserPermission] ADD CONSTRAINT [FK_UsUserPermission_UsUser] FOREIGN KEY([UserId]) REFERENCES [dbo].[UsUser] ([Id])
+ALTER TABLE [dbo].[UsUserConfig] WITH CHECK ADD CONSTRAINT [FK_UsUserConfig_UsUser] FOREIGN KEY([UserId])
+REFERENCES [dbo].[UsUser] ([Id]) ON DELETE CASCADE
 GO
+
 
 -- 7. TẠO STORED PROCEDURES
 GO
