@@ -42,11 +42,8 @@
 
     // --- TẮT LOADING ---
     hideLoader: function () {
-        // Tìm class .theme-loader 
-        var loader = document.querySelector('.theme-loader');
-        if (loader) {
-            // Ẩn nó đi
-            loader.style.display = 'none';
-        }
-    }
+        $('.theme-loader').fadeOut('slow', function () {
+            $(this).remove();
+        });
+    },
 };
