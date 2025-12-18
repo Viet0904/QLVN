@@ -1,5 +1,5 @@
 ﻿window.adminAssetManager = {
-    // Danh sách các ID của thẻ CSS admin để dễ quản lý xóa đi sau này
+    // Danh sách các ID của thẻ CSS admin để dễ quản lý 
     loadedCssIds: [],
 
     loadCss: function (href) {
