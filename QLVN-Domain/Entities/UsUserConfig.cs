@@ -4,7 +4,7 @@ namespace QLVN_Domain.Entities
 {
     public class UsUserConfig
     {
-        [[Key]
+        [Key]
         [StringLength(8)] // Khớp với nvarchar(8) trong SQL
         public string UserId { get; set; }
 
