@@ -119,6 +119,70 @@
         gtag('js', new Date());
 
         gtag('config', 'UA-23581568-13');
+
+    </script>
+    <script>
+        window.themeManager = {
+            applyTheme: function (s) {
+                if (!s) return;
+
+                // 1. Layout Position (Fixed/Static)
+                // Header Position
+                var header = document.querySelector('.pcoded-header');
+                var navbar = document.querySelector('.pcoded-navbar');
+
+                if (header && navbar) {
+                    if (s.fixedHeader) {
+                        header.setAttribute('pcoded-header-position', 'fixed');
+                        navbar.setAttribute('pcoded-header-position', 'fixed');
+                    } else {
+                        header.setAttribute('pcoded-header-position', 'relative');
+                        navbar.setAttribute('pcoded-header-position', 'relative');
+                    }
+
+                    // Sidebar Position
+                    if (s.fixedSidebar) {
+                        navbar.setAttribute('pcoded-navbar-position', 'fixed');
+                    } else {
+                        navbar.setAttribute('pcoded-navbar-position', 'absolute');
+                    }
+
+                    // 2. Sidebar Settings
+                    // Menu Type (Icon Color)
+                    // Template gốc dùng class để đổi icon, nhưng ta có thể set attribute
+                    // Nếu st5 (Color Icon) -> thêm class icon-colored (tùy template logic)
+                    // Ở đây ta set attribute để script gốc (nếu có watch) tự xử lý, hoặc CSS selector ăn theo
+                    navbar.setAttribute('active-item-style', s.menuType === 'st5' ? 'style2' : 'style0');
+
+                    // Effect
+                    navbar.setAttribute('vertical-effect', s.sidebarEffect);
+
+                    // Border (Template Adminty dùng attribute khác cho border, ví dụ subitem-border)
+                    // Nhưng theo HTML bạn gửi, nó là vertical-border-style
+                    navbar.setAttribute('pcoded-navbar-border', s.borderStyle);
+
+                    // Icons
+                    navbar.setAttribute('dropdown-icon', s.dropdownIcon);
+                    navbar.setAttribute('subitem-icon', s.subItemIcon);
+
+                    // 3. Colors
+                    navbar.setAttribute('active-item-theme', s.activeItemTheme);
+                    navbar.setAttribute('caption-theme', s.captionTheme);
+                }
+
+                // Logo Color
+                var logo = document.querySelector('.navbar-logo');
+                if (logo) logo.setAttribute('logo-theme', s.logoTheme);
+
+                // Header Color
+                if (header) {
+                    // Xóa class cũ
+                    header.className = header.className.replace(/\bheader-theme\S+/g, '');
+                    header.classList.add(s.headerTheme);
+                    header.setAttribute('header-theme', s.headerTheme);
+                }
+            }
+        };
     </script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>

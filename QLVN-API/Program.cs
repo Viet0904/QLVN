@@ -52,7 +52,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<IThemeService, ThemeService>();
 // 3. Đăng ký Application Services
 builder.Services.AddScoped<DvsdService, DvsdService>();
 

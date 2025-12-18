@@ -1,8 +1,21 @@
-﻿<nav class="pcoded-navbar">
+﻿@inject QLVN_Blazor.Services.ThemeState ThemeState
+@implements IDisposable
+
+<nav class="pcoded-navbar @ThemeState.Settings.SidebarEffect"
+     navbar-theme="@ThemeState.Settings.MainLayout"
+     active-item-theme="@ThemeState.Settings.ActiveLinkColor"
+     sub-item-theme="@ThemeState.Settings.ActiveLinkColor"
+     active-item-style="style0"
+     pcoded-navbar-position="@(ThemeState.Settings.IsFixedSidebar ? "fixed" : "absolute")">
+
     <div class="pcoded-inner-navbar main-menu">
-        <div class="pcoded-navigatio-lavel">Navigation</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu active pcoded-trigger">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Navigation</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu active pcoded-trigger" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-home"></i></span>
                     <span class="pcoded-mtext">Dashboard</span>
@@ -26,14 +39,14 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-sidebar"></i></span>
                     <span class="pcoded-mtext">Page layouts</span>
                     <span class="pcoded-badge label label-warning">NEW</span>
                 </a>
                 <ul class="pcoded-submenu">
-                    <li class=" pcoded-hasmenu">
+                    <li class=" pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                         <a href="javascript:void(0)">
                             <span class="pcoded-mtext">Vertical</span>
                         </a>
@@ -61,7 +74,7 @@
 
                         </ul>
                     </li>
-                    <li class=" pcoded-hasmenu">
+                    <li class=" pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                         <a href="javascript:void(0)">
                             <span class="pcoded-mtext">Horizontal</span>
                         </a>
@@ -111,7 +124,7 @@
                     <span class="pcoded-mtext">Navigation</span>
                 </a>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-layers"></i></span>
                     <span class="pcoded-mtext">Widget</span>
@@ -137,9 +150,13 @@
                 </ul>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">UI Element</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">UI Element</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-box"></i></span>
                     <span class="pcoded-mtext">Basic Components</span>
@@ -222,7 +239,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-gitlab"></i></span>
                     <span class="pcoded-mtext">Advance Components</span>
@@ -306,7 +323,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-package"></i></span>
                     <span class="pcoded-mtext">Extra Components</span>
@@ -343,7 +360,7 @@
                     <span class="pcoded-badge label label-danger">HOT</span>
                 </a>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-command"></i></span>
                     <span class="pcoded-mtext">Icons</span>
@@ -397,9 +414,13 @@
                 </ul>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Forms</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Forms</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-clipboard"></i></span>
                     <span class="pcoded-mtext">Form Components</span>
@@ -452,7 +473,7 @@
                     <span class="pcoded-mtext">Form Wizard</span>
                 </a>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-book"></i></span>
                     <span class="pcoded-mtext">Ready To Use</span>
@@ -537,9 +558,13 @@
                 </ul>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Tables</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Tables</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-credit-card"></i></span>
                     <span class="pcoded-mtext">Bootstrap Table</span>
@@ -567,7 +592,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-inbox"></i></span>
                     <span class="pcoded-mtext">Data Table</span>
@@ -617,7 +642,7 @@
 
                 </ul>
             </li>
-            <li class="pcoded-hasmenu">
+            <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-server"></i></span>
                     <span class="pcoded-mtext">Data Table Extensions</span>
@@ -628,7 +653,7 @@
                             <span class="pcoded-mtext">AutoFill</span>
                         </a>
                     </li>
-                    <li class="pcoded-hasmenu">
+                    <li class="pcoded-hasmenu" dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                         <a href="javascript:void(0)">
                             <span class="pcoded-mtext">Button</span>
                         </a>
@@ -693,7 +718,7 @@
                     <span class="pcoded-mtext">FooTable</span>
                 </a>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-airplay"></i></span>
                     <span class="pcoded-mtext">Handson Table</span>
@@ -753,9 +778,13 @@
                 </a>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Chart And Maps</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu ">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Chart And Maps</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-pie-chart"></i></span>
                     <span class="pcoded-mtext">Charts</span>
@@ -828,7 +857,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-map"></i></span>
                     <span class="pcoded-mtext">Maps</span>
@@ -863,9 +892,13 @@
                 </a>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Pages</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu ">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Pages</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-unlock"></i></span>
                     <span class="pcoded-mtext">Authentication</span>
@@ -933,7 +966,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-sliders"></i></span>
                     <span class="pcoded-mtext">Maintenance</span>
@@ -956,7 +989,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-users"></i></span>
                     <span class="pcoded-mtext">User Profile</span>
@@ -984,7 +1017,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-shopping-cart"></i></span>
                     <span class="pcoded-mtext">E-Commerce</span>
@@ -1023,7 +1056,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-mail"></i></span>
                     <span class="pcoded-mtext">Email</span>
@@ -1044,7 +1077,7 @@
                             <span class="pcoded-mtext">Read Mail</span>
                         </a>
                     </li>
-                    <li class="pcoded-hasmenu ">
+                    <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                         <a href="javascript:void(0)">
                             <span class="pcoded-mtext">Email Template</span>
                         </a>
@@ -1079,15 +1112,19 @@
                 </ul>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">App</div>
-        <ul class="pcoded-item pcoded-left-item">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">App</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
             <li class=" ">
                 <a href="chat.htm">
                     <span class="pcoded-micon"><i class="feather icon-message-square"></i></span>
                     <span class="pcoded-mtext">Chat</span>
                 </a>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-globe"></i></span>
                     <span class="pcoded-mtext">Social</span>
@@ -1105,7 +1142,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-check-circle"></i></span>
                     <span class="pcoded-mtext">Task</span>
@@ -1133,7 +1170,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-bookmark"></i></span>
                     <span class="pcoded-mtext">To-Do</span>
@@ -1151,7 +1188,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-image"></i></span>
                     <span class="pcoded-mtext">Gallery</span>
@@ -1174,7 +1211,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-search"></i><b>S</b></span>
                     <span class="pcoded-mtext">Search</span>
@@ -1192,7 +1229,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-award"></i></span>
                     <span class="pcoded-mtext">Job Search</span>
@@ -1222,9 +1259,13 @@
                 </ul>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Extension</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu ">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Extension</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-file-plus"></i></span>
                     <span class="pcoded-mtext">Editor</span>
@@ -1253,8 +1294,12 @@
                 </ul>
             </li>
         </ul>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu ">
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-file-minus"></i></span>
                     <span class="pcoded-mtext">Invoice</span>
@@ -1277,7 +1322,7 @@
                     </li>
                 </ul>
             </li>
-            <li class="pcoded-hasmenu ">
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-calendar"></i></span>
                     <span class="pcoded-mtext">Event Calendar</span>
@@ -1315,9 +1360,13 @@
                 </a>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Other</div>
-        <ul class="pcoded-item pcoded-left-item">
-            <li class="pcoded-hasmenu ">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Other</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
+            <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                 <a href="javascript:void(0)">
                     <span class="pcoded-micon"><i class="feather icon-list"></i></span>
                     <span class="pcoded-mtext">Menu Levels</span>
@@ -1328,7 +1377,7 @@
                             <span class="pcoded-mtext">Menu Level 2.1</span>
                         </a>
                     </li>
-                    <li class="pcoded-hasmenu ">
+                    <li class="pcoded-hasmenu " dropdown-icon="@ThemeState.Settings.DropdownIcon" subitem-icon="@ThemeState.Settings.SubItemIcon">
                         <a href="javascript:void(0)">
                             <span class="pcoded-mtext">Menu Level 2.2</span>
                         </a>
@@ -1361,8 +1410,12 @@
                 </a>
             </li>
         </ul>
-        <div class="pcoded-navigatio-lavel">Support</div>
-        <ul class="pcoded-item pcoded-left-item">
+        <div class="pcoded-navigatio-lavel" lheader-theme="@ThemeState.Settings.MenuCaptionColor">Support</div>
+        <ul class="pcoded-item pcoded-left-item"
+            item-border="@ThemeState.Settings.BorderStyle"
+            item-border-style="@ThemeState.Settings.BorderStyle"
+            subitem-border="@ThemeState.Settings.BorderStyle">
+
             <li class="">
                 <a href="http://html.codedthemes.com/Adminty/doc" target="_blank">
                     <span class="pcoded-micon"><i class="feather icon-monitor"></i></span>
@@ -1378,3 +1431,15 @@
         </ul>
     </div>
 </nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeState.OnChange += StateHasChanged; // Lắng nghe để render lại UI
+    }
+
+    public void Dispose()
+    {
+        ThemeState.OnChange -= StateHasChanged;
+    }
+}

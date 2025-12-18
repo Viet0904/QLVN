@@ -18,9 +18,9 @@ namespace QLVN_Contracts.Dtos.Theme
         public string SubItemIcon { get; set; } = "style1"; // style1 -> style6
 
         // 3. Colors
-        public string HeaderBrandColor { get; set; } = "theme1"; // .logo-theme
-        public string HeaderColor { get; set; } = "theme1"; // .header-theme
-        public string ActiveLinkColor { get; set; } = "theme1"; // .active-item-theme  (theme1-theme12)
-        public string MenuCaptionColor { get; set; } = "theme5"; // .pcoded-navigatio-lavel (theme1-theme6)
+        public string HeaderBrandColor { get; set; } = "theme1"; // .logo-theme (theme1 -> theme5)
+        public string HeaderColor { get; set; } = "theme1"; // .header- (theme1 -> theme6)
+        public string ActiveLinkColor { get; set; } = "theme1"; // .active-item-theme  (theme1 -> theme12)
+        public string MenuCaptionColor { get; set; } = "theme5"; // .pcoded-navigatio-lavel (theme1 -> theme6)
     }
 }

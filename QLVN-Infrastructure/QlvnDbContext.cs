@@ -70,6 +70,7 @@ public partial class QlvnDbContext : DbContext
     public virtual DbSet<UsGroup> UsGroups { get; set; }
 
     public virtual DbSet<UsUser> UsUsers { get; set; }
+    public virtual DbSet<UsUserConfig> UsUserConfigs { get; set; }
 
     public virtual DbSet<UsUserLog> UsUserLogs { get; set; }
 
@@ -806,6 +807,24 @@ public partial class QlvnDbContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(8);
             entity.Property(e => e.UserName).HasMaxLength(10);
+        });
+
+        modelBuilder.Entity<UsUserConfig>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("PK_UsUserConfig");
+            entity.ToTable("UsUserConfig");
+            entity.Property(e => e.UserId)
+                .HasMaxLength(8)
+                .HasColumnType("nvarchar(8)");
+            entity.Property(e => e.Settings)
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<UsUserLog>(entity =>

@@ -1,7 +1,16 @@
-﻿<nav class="navbar header-navbar pcoded-header">
+﻿@using QLVN_Blazor.Services
+@inject ThemeState ThemeState
+@implements IDisposable
+
+@* - Thêm class 'isconfirmed' nếu chọn Fixed Header 
+   - Gán attribute 'header-theme' để đổi màu thanh ngang trên cùng
+*@
+<nav class="navbar header-navbar pcoded-header @(ThemeState.Settings.IsFixedHeader ? "isconfirmed" : "")"
+     header-theme="@ThemeState.Settings.HeaderColor">
     <div class="navbar-wrapper">
 
-        <div class="navbar-logo">
+        @* Gán attribute 'logo-theme' để đổi màu khu vực Logo *@
+        <div class="navbar-logo" logo-theme="@ThemeState.Settings.HeaderBrandColor">
             <a class="mobile-menu" id="mobile-collapse" href="#!">
                 <i class="feather icon-menu"></i>
             </a>
@@ -126,7 +135,6 @@
 </nav>
 
 
-<!-- Sidebar chat start -->
 <div id="sidebar" class="users p-chat-user showChat">
     <div class="had-container">
         <div class="card card_main p-fixed users-main">
@@ -194,8 +202,15 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        // Khi ThemeState thay đổi, TopBar sẽ render lại để cập nhật màu sắc
+        ThemeState.OnChange += StateHasChanged;
+    }
 
+    public void Dispose()
+    {
+        // Hủy đăng ký khi component bị hủy để tránh rò rỉ bộ nhớ
+        ThemeState.OnChange -= StateHasChanged;
+    }
 }
-
-
-

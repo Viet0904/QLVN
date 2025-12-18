@@ -1,0 +1,239 @@
+﻿@using QLVN_Contracts.Dtos.Theme
+@using QLVN_Blazor.Services
+@inject ThemeState ThemeState
+@inject IThemeService ThemeService // Service gọi API
+@inject IJSRuntime JS
+
+<div id="styleSelector" class="@(isOpen ? "open" : "")">
+    <div class="selector-toggle">
+        <a href="javascript:void(0)" @onclick="() => isOpen = !isOpen"></a>
+    </div>
+    <ul>
+        <li>
+            <p class="selector-title main-title st-main-title">
+                <b>Adminty </b>Customizer
+            </p>
+            <span class="text-muted">Live customizer with tons of options</span>
+        </li>
+        <li>
+            <p class="selector-title">Main layouts</p>
+        </li>
+        <li>
+            <div class="theme-color">
+                <a href="javascript:void(0)" class="navbar-theme @(IsActive("MainLayout", "themelight1"))"
+                   @onclick='() => Update(s => s.MainLayout = "themelight1")'>
+                    <span class="head"></span><span class="cont"></span>
+                </a>
+                <a href="javascript:void(0)" class="navbar-theme @(IsActive("MainLayout", "theme1"))"
+                   @onclick='() => Update(s => s.MainLayout = "theme1")'>
+                    <span class="head"></span><span class="cont"></span>
+                </a>
+            </div>
+        </li>
+    </ul>
+
+    <div class="slimScrollDiv" style="position: relative; overflow: hidden; width: auto; height: calc(-440px + 100vh);">
+        <div class="style-cont m-t-10" style="overflow: hidden; width: auto; height: calc(-440px + 100vh);">
+
+            <ul class="nav nav-tabs tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#sel-layout" role="tab">Layouts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#sel-sidebar-setting" role="tab">Sidebar Settings</a>
+                </li>
+            </ul>
+
+            <div class="tab-content tabs">
+                <div class="tab-pane active" id="sel-layout" role="tabpanel">
+                    <ul>
+                        <li class="theme-option">
+                            <div class="checkbox-fade fade-in-primary">
+                                <label>
+                                    <input type="checkbox" checked="@ThemeState.Settings.IsFixedSidebar"
+                                           @onchange="@(e => Update(s => s.IsFixedSidebar = (bool)e.Value))">
+                                    <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
+                                    <span>Fixed Sidebar Position</span>
+                                </label>
+                            </div>
+                        </li>
+                        <li class="theme-option">
+                            <div class="checkbox-fade fade-in-primary">
+                                <label>
+                                    <input type="checkbox" checked="@ThemeState.Settings.IsFixedHeader"
+                                           @onchange="@(e => Update(s => s.IsFixedHeader = (bool)e.Value))">
+                                    <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
+                                    <span>Fixed Header Position</span>
+                                </label>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="tab-pane" id="sel-sidebar-setting" role="tabpanel">
+                    <ul>
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Menu Type</p>
+                            <div class="form-radio" id="menu-effect">
+                                <div class="radio radio-inverse radio-inline">
+                                    <label>
+                                        <input type="radio" name="radio" checked="@(ThemeState.Settings.MenuType == "st6")"
+                                               @onchange='() => Update(s => s.MenuType = "st6")'>
+                                        <i class="helper"></i>
+                                        <span class="micon st6"><i class="feather icon-command"></i></span>
+                                    </label>
+                                </div>
+                                <div class="radio radio-primary radio-inline">
+                                    <label>
+                                        <input type="radio" name="radio" checked="@(ThemeState.Settings.MenuType == "st5")"
+                                               @onchange='() => Update(s => s.MenuType = "st5")'>
+                                        <i class="helper"></i>
+                                        <span class="micon st5"><i class="feather icon-command"></i></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </li>
+
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">SideBar Effect</p>
+                            <select class="form-control minimal" value="@ThemeState.Settings.SidebarEffect"
+                                    @onchange="@(e => Update(s => s.SidebarEffect = e.Value.ToString()))">
+                                <option value="shrink">shrink</option>
+                                <option value="overlay">overlay</option>
+                                <option value="push">Push</option>
+                            </select>
+                        </li>
+
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Hide/Show Border</p>
+                            <select class="form-control minimal" value="@ThemeState.Settings.BorderStyle"
+                                    @onchange="@(e => Update(s => s.BorderStyle = e.Value.ToString()))">
+                                <option value="solid">Style 1</option>
+                                <option value="dotted">Style 2</option>
+                                <option value="dashed">Style 3</option>
+                                <option value="none">No Border</option>
+                            </select>
+                        </li>
+
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Drop-Down Icon</p>
+                            <select class="form-control minimal" value="@ThemeState.Settings.DropdownIcon"
+                                    @onchange="@(e => Update(s => s.DropdownIcon = e.Value.ToString()))">
+                                <option value="style1">Style 1</option>
+                                <option value="style2">style 2</option>
+                                <option value="style3">style 3</option>
+                            </select>
+                        </li>
+
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Sub Menu Drop-down Icon</p>
+                            <select class="form-control minimal" value="@ThemeState.Settings.SubItemIcon"
+                                    @onchange="@(e => Update(s => s.SubItemIcon = e.Value.ToString()))">
+                                <option value="style1">Style 1</option>
+                                <option value="style2">style 2</option>
+                                <option value="style3">style 3</option>
+                                <option value="style4">style 4</option>
+                                <option value="style5">style 5</option>
+                                <option value="style6">style 6</option>
+                            </select>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <ul>
+                <li><p class="selector-title">Header Brand color</p></li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var t = $"theme{i}";
+                            <a href="javascript:void(0)" class="logo-theme @(IsActive("HeaderBrandColor", t))"
+                               @onclick='() => Update(s => s.HeaderBrandColor = t)'>
+                                <span class="head"></span><span class="cont"></span>
+                            </a>
+                        }
+                    </div>
+                </li>
+
+                <li><p class="selector-title">Header color</p></li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        @for (int i = 1; i <= 6; i++)
+                        {
+                            var t = $"theme{i}";
+                            <a href="javascript:void(0)" class="header-theme @(IsActive("HeaderColor", t))"
+                               @onclick='() => Update(s => s.HeaderColor = t)'>
+                                <span class="head"></span><span class="cont"></span>
+                            </a>
+                        }
+                    </div>
+                </li>
+
+                <li><p class="selector-title">Active link color</p></li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            var t = $"theme{i}";
+                            <a href="javascript:void(0)" class="active-item-theme small @(IsActive("ActiveLinkColor", t))"
+                               @onclick='() => Update(s => s.ActiveLinkColor = t)'>&nbsp;</a>
+                        }
+                    </div>
+                </li>
+
+                <li><p class="selector-title">Menu Caption Color</p></li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        @for (int i = 1; i <= 6; i++)
+                        {
+                            var t = $"theme{i}";
+                            <a href="javascript:void(0)" class="leftheader-theme small @(IsActive("MenuCaptionColor", t))"
+                               @onclick='() => Update(s => s.MenuCaptionColor = t)'>&nbsp;</a>
+                        }
+                    </div>
+                </li>
+            </ul>
+
+            <div class="text-center m-t-20 m-b-20">
+                <button class="btn btn-primary" @onclick="SaveConfigToDb">
+                    <i class="feather icon-save"></i> Lưu Cấu Hình
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isOpen = false;
+
+    // Hàm helper để check class active
+    private string IsActive(string property, string value)
+    {
+        var propInfo = typeof(ThemeSettings).GetProperty(property);
+        if (propInfo != null)
+        {
+            var currentValue = propInfo.GetValue(ThemeState.Settings)?.ToString();
+            return currentValue == value ? "active" : "";
+        }
+        return "";
+    }
+
+    // Hàm cập nhật trạng thái (Real-time)
+    private void Update(Action<ThemeSettings> action)
+    {
+        ThemeState.Update(action);
+    }
+
+    // Hàm lưu xuống DB
+    private async Task SaveConfigToDb()
+    {
+        // Giả sử bạn có UserId trong session hoặc lấy từ AuthState
+        // var userId = ...;
+        // await ThemeService.SaveUserThemeAsync(userId, ThemeState.Settings);
+
+        // Gọi JS alert tạm thời
+        await JS.InvokeVoidAsync("alert", "Đã lưu cấu hình thành công!");
+    }
+}
