@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
-
+@using QLVN_Blazor.Services
+@inject ThemeState ThemeState
+@implements IDisposable
 
 
 <div id="pcoded" class="pcoded">
@@ -29,3 +31,16 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Lắng nghe sự kiện để render lại khi có thay đổi từ SettingTheme
+        ThemeState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeState.OnChange -= StateHasChanged;
+    }
+}
