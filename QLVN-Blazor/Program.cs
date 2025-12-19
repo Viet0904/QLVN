@@ -25,7 +25,6 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddScoped<ThemeService>();
-builder.Services.AddScoped<ThemeState>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddBlazoredLocalStorage(); 
 
