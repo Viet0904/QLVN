@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using QLVN_Application.Interfaces;
 using QLVN_Contracts.Dtos.User;
+using Microsoft.AspNetCore.Authorization;
 namespace QLVN_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : Controller
     {
         

@@ -10,12 +10,18 @@ namespace QLVN_Blazor.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorage;
         private readonly AuthenticationStateProvider _authStateProvider;
+        private readonly NotificationService _notificationService;
 
-        public AuthService(HttpClient httpClient, ILocalStorageService localStorage, AuthenticationStateProvider authStateProvider)
+        public AuthService(
+            HttpClient httpClient,
+            ILocalStorageService localStorage,
+            AuthenticationStateProvider authStateProvider,
+            NotificationService notificationService)
         {
             _httpClient = httpClient;
             _localStorage = localStorage;
             _authStateProvider = authStateProvider;
+            _notificationService = notificationService;
         }
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
@@ -30,12 +36,18 @@ namespace QLVN_Blazor.Services
                 // Thông Báo cho Blazor biết đã đăng nhập 
                 ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated(result.Token);
 
+                // Hiển thị notification chào mừng
+                await _notificationService.ShowSuccessAsync(
+                    $"Chào mừng {loginRequest.UserName}!",
+                    "fa fa-smile-o");
+
                 return result;
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                throw new Exception(error); 
+                await _notificationService.ShowErrorAsync($"Đăng nhập thất bại: {error}");
+                throw new Exception(error);
             }
         }
 
@@ -43,6 +55,7 @@ namespace QLVN_Blazor.Services
         {
             await _localStorage.RemoveItemAsync("authToken");
             ((CustomAuthStateProvider)_authStateProvider).MarkUserAsLoggedOut();
+            await _notificationService.ShowInfoAsync("Đã đăng xuất thành công");
         }
     }
 }

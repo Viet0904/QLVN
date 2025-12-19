@@ -119,7 +119,13 @@
                 // await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
                 // await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 // await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+
+                // Hàm Notification
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/notificationManager.js')");
+
+
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+                
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
             }
             catch (Exception ex)
