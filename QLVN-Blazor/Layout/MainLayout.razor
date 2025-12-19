@@ -1,16 +1,7 @@
 ﻿@inherits LayoutComponentBase
-@using QLVN_Blazor.Services
-@inject ThemeState ThemeState
-@implements IDisposable
 
 
-<div id="pcoded" class="pcoded
-     @ThemeState.Settings.MainLayout
-     @(string.IsNullOrEmpty(ThemeState.Settings.SidebarEffect) ? "" : ThemeState.Settings.SidebarEffect)
-     @(ThemeState.Settings.IsFixedHeader ? "headerpos-fixed" : "")
-     @(ThemeState.Settings.IsFixedSidebar ? "contus-fixed" : "")  
-     @(ThemeState.Settings.BorderStyle == "none" ? "no-border" : "")
-     ">
+<div id="pcoded" class="pcoded">
     <div class="pcoded-overlay-box"></div>
     <div class="pcoded-container navbar-wrapper">
         <TopBar />
@@ -37,16 +28,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    protected override void OnInitialized()
-    {
-        // Lắng nghe sự kiện để render lại khi có thay đổi từ SettingTheme
-        ThemeState.OnChange += StateHasChanged;
-    }
-
-    public void Dispose()
-    {
-        ThemeState.OnChange -= StateHasChanged;
-    }
-}
