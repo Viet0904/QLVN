@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using QLVN_Blazor.Services;
-using QLVN_Blazor;
-using Blazored.LocalStorage;
+﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using QLVN_Blazor;
+using QLVN_Blazor.Handlers;
+using QLVN_Blazor.Services;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Http;  
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -13,6 +17,22 @@ builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri("https://localhost:5084")
 });
+builder.Services.AddScoped<UserApiClient>();
+builder.Services.AddScoped<NotificationService>();
+// Đăng ký Handler
+builder.Services.AddScoped<JwtAuthorizationHandler>();
+
+// Cấu hình HttpClient có sử dụng JwtAuthorizationHandler
+builder.Services.AddHttpClient("QLVN.API", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:5084");
+})
+.AddHttpMessageHandler<JwtAuthorizationHandler>();
+
+
+// Thay đổi cách đăng ký HttpClient mặc định
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("QLVN.API"));
+
 builder.Services.AddScoped<UserApiClient>();
 builder.Services.AddScoped<NotificationService>();
 

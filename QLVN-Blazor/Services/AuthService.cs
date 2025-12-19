@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using QLVN_Contracts.Dtos.Auth;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace QLVN_Blazor.Services
 {
@@ -34,28 +35,62 @@ namespace QLVN_Blazor.Services
                 await _localStorage.SetItemAsync("authToken", result!.Token);
 
                 // Thông Báo cho Blazor biết đã đăng nhập 
-                ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated(result.Token);
-
-                // Hiển thị notification chào mừng
-                await _notificationService.ShowSuccessAsync(
-                    $"Chào mừng {loginRequest.UserName}!",
-                    "fa fa-smile-o");
+                ((CustomAuthStateProvider)_authStateProvider).NotifyUserAuthentication(result.Token);
 
                 return result;
             }
             else
             {
-                var error = await response.Content.ReadAsStringAsync();
-                await _notificationService.ShowErrorAsync($"Đăng nhập thất bại: {error}");
-                throw new Exception(error);
+                // Đọc nội dung lỗi trả về từ API
+                var errorContent = await response.Content.ReadAsStringAsync();
+
+                // Cố gắng parse JSON để lấy message nếu có
+                string serverMessage = errorContent ?? string.Empty;
+                try
+                {
+                    var doc = JsonDocument.Parse(errorContent);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        if (doc.RootElement.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                            serverMessage = m.GetString() ?? serverMessage;
+                        else if (doc.RootElement.TryGetProperty("Message", out var m2) && m2.ValueKind == JsonValueKind.String)
+                            serverMessage = m2.GetString() ?? serverMessage;
+                    }
+                }
+                catch
+                {
+                    // ignore parse errors
+                }
+
+                // Chuẩn hoá thông báo cho người dùng 
+                string userMessage;
+                if (!string.IsNullOrWhiteSpace(serverMessage) &&
+                    (serverMessage.IndexOf("tài khoản", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     serverMessage.IndexOf("tài khoản không tồn tại", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     serverMessage.IndexOf("mật khẩu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     serverMessage.IndexOf("mật khẩu không chính xác", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    userMessage = "Đăng nhập thất bại: Tài khoản hoặc mật khẩu không chính xác.";
+                }
+                else
+                {
+                    userMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+                }
+
+                // Hiển thị notification lỗi
+                await _notificationService.ShowErrorAsync(userMessage);
+
+                Console.WriteLine($"AuthService.Login error (server): {serverMessage}");
+
+                throw new Exception(userMessage);
             }
         }
 
         public async Task Logout()
         {
             await _localStorage.RemoveItemAsync("authToken");
-            ((CustomAuthStateProvider)_authStateProvider).MarkUserAsLoggedOut();
-            await _notificationService.ShowInfoAsync("Đã đăng xuất thành công");
+            ((CustomAuthStateProvider)_authStateProvider).NotifyUserLogout();
+            // Không hiển thị notification ở đây, sẽ redirect ngay
         }
     }
 }

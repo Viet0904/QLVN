@@ -1,7 +1,10 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@using QLVN_Blazor.Services
 
 @inject IJSRuntime JS
-
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NotificationService NotificationService
 <div class="pcoded-inner-content">
     <div class="main-body">
         <div class="page-wrapper">
@@ -452,20 +455,45 @@
     </div>
 </div>
 @code {
+    private bool hasShownWelcome = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Kiểm tra xem đã hiển thị welcome notification chưa (dùng session storage hoặc flag)
+        if (!hasShownWelcome)
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated ?? false)
+            {
+                // Lấy FullName từ claims
+                var fullName = authState.User.FindFirst("FullName")?.Value ??
+                              authState.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ??
+                              "User";
+
+                // Hiển thị notification chào mừng ở trang Home
+                await NotificationService.ShowSuccessAsync(
+                    $"Chào mừng {fullName}!",
+                    "fa fa-smile-o");
+
+                hasShownWelcome = true;
+            }
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             try
             {
-                // 1. Chờ một chút xíu (khoảng 500ms - 1000ms) 
+                // 1. Chờ một chút xíu (khoảng 500ms - 1000ms)
                 await Task.Delay(700);
 
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
                 // Chart.js
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/Chart.js");
 
-                // AmCharts 
+                // AmCharts
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/amcharts.js");
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/serial.js");
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/light.js");
@@ -477,9 +505,9 @@
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
-                
 
-                // 2. GỌI HÀM TẮT LOADER 
+
+                // 2. GỌI HÀM TẮT LOADER
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
             }
             catch (Exception ex)

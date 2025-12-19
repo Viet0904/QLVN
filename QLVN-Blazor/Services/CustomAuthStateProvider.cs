@@ -3,17 +3,16 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+
 namespace QLVN_Blazor.Services
 {
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
         private readonly ILocalStorageService _localStorage;
-        private readonly HttpClient _http;
 
-        public CustomAuthStateProvider(ILocalStorageService localStorage, HttpClient http)
+        public CustomAuthStateProvider(ILocalStorageService localStorage)
         {
             _localStorage = localStorage;
-            _http = http;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -22,33 +21,60 @@ namespace QLVN_Blazor.Services
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));  // Unauthenticated
             }
 
-            _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            // Parse token lấy claims (đơn giản hóa bằng JwtSecurityTokenHandler)
             var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var identity = new ClaimsIdentity(jwtToken.Claims, "jwt");
 
-            return new AuthenticationState(new ClaimsPrincipal(identity));
+            try
+            {
+                var jwtToken = handler.ReadJwtToken(token);
+
+                // Kiểm tra thời hạn token (ValidTo) — nếu hết hạn => xoá token và trả về Unauthenticated
+                if (jwtToken.ValidTo < DateTime.UtcNow)
+                {
+                    await _localStorage.RemoveItemAsync("authToken");
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                var identity = new ClaimsIdentity(jwtToken.Claims, "jwt");
+                var user = new ClaimsPrincipal(identity);
+
+                return new AuthenticationState(user);  // Authenticated
+            }
+            catch
+            {
+                // Nếu token không hợp lệ (parse error) => xoá và trả về Unauthenticated
+                await _localStorage.RemoveItemAsync("authToken");
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
         }
 
-        public void MarkUserAsAuthenticated(string token)
+        // Method để notify state thay đổi sau login/logout
+        public void NotifyUserAuthentication(string token)
+        {
+            var authenticatedUser = BuildClaimsPrincipal(token);
+            var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
+            NotifyAuthenticationStateChanged(authState);
+        }
+
+        public void NotifyUserLogout()
+        {
+            var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
+            var authState = Task.FromResult(new AuthenticationState(anonymousUser));
+            NotifyAuthenticationStateChanged(authState);
+        }
+
+        private ClaimsPrincipal BuildClaimsPrincipal(string token)
         {
             var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadJwtToken(token);
             var identity = new ClaimsIdentity(jwtToken.Claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
+            return new ClaimsPrincipal(identity);
         }
 
-        public void MarkUserAsLoggedOut()
-        {
-            var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymous)));
-        }
+        // Thêm 2 phương thức tương thích vì AuthService hiện đang gọi MarkUserAsAuthenticated/MarkUserAsLoggedOut
+        public void MarkUserAsAuthenticated(string token) => NotifyUserAuthentication(token);
+        public void MarkUserAsLoggedOut() => NotifyUserLogout();
     }
 }
