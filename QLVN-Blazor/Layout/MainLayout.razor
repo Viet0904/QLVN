@@ -4,7 +4,12 @@
 @implements IDisposable
 
 
-<div id="pcoded" class="pcoded">
+<div id="pcoded" class="pcoded
+    @ThemeState.Settings.MainLayout
+    @(ThemeState.Settings.SidebarEffect ?? "")
+    @(ThemeState.Settings.IsFixedHeader ? "headerpos-fixed" : "")
+    @(ThemeState.Settings.IsFixedSidebar ? "sidebar-fixed" : "")
+    ">
     <div class="pcoded-overlay-box"></div>
     <div class="pcoded-container navbar-wrapper">
         <TopBar />
