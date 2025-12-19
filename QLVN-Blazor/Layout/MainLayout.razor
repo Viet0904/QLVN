@@ -5,11 +5,12 @@
 
 
 <div id="pcoded" class="pcoded
-    @ThemeState.Settings.MainLayout
-    @(ThemeState.Settings.SidebarEffect ?? "")
-    @(ThemeState.Settings.IsFixedHeader ? "headerpos-fixed" : "")
-    @(ThemeState.Settings.IsFixedSidebar ? "sidebar-fixed" : "")
-    ">
+     @ThemeState.Settings.MainLayout
+     @(string.IsNullOrEmpty(ThemeState.Settings.SidebarEffect) ? "" : ThemeState.Settings.SidebarEffect)
+     @(ThemeState.Settings.IsFixedHeader ? "headerpos-fixed" : "")
+     @(ThemeState.Settings.IsFixedSidebar ? "contus-fixed" : "")  
+     @(ThemeState.Settings.BorderStyle == "none" ? "no-border" : "")
+     ">
     <div class="pcoded-overlay-box"></div>
     <div class="pcoded-container navbar-wrapper">
         <TopBar />

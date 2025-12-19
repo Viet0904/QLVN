@@ -25,17 +25,19 @@
             <div class="theme-color">
                 <a href="javascript:void(0)"
                    class="navbar-theme @(ThemeState.Settings.MainLayout == "themelight1" ? "active" : "")"
+                   navbar-theme="themelight1"
                    @onclick='() => Update(s => s.MainLayout = "themelight1")'>
                     <span class="head"></span>
                     <span class="cont"></span>
                 </a>
                 <a href="javascript:void(0)"
                    class="navbar-theme @(ThemeState.Settings.MainLayout == "theme1" ? "active" : "")"
+                   navbar-theme="theme1"
                    @onclick='() => Update(s => s.MainLayout = "theme1")'>
                     <span class="head"></span>
                     <span class="cont"></span>
                 </a>
-                <!-- Có thể thêm các theme khác nếu cần -->
+              
             </div>
         </li>
     </ul>
@@ -120,26 +122,27 @@
                             </div>
                         </li>
 
+                        <!-- Sidebar Effect -->
                         <li class="theme-option">
                             <p class="sub-title drp-title">SideBar Effect</p>
                             <select class="form-control minimal"
                                     value="@ThemeState.Settings.SidebarEffect"
-                                    @onchange="@(e => Update(s => s.SidebarEffect = e.Value?.ToString() ?? "shrink"))">
-                                <option value="shrink">shrink</option>
-                                <option value="overlay">overlay</option>
+                                    @onchange="@(e => Update(s => s.SidebarEffect = e.Value?.ToString()))">
+                                <option value="">Default</option>
+                                <option value="shrink">Shrink</option>
+                                <option value="overlay">Overlay</option>
                                 <option value="push">Push</option>
                             </select>
                         </li>
 
+                        <!-- Hide/Show Border -->
                         <li class="theme-option">
                             <p class="sub-title drp-title">Hide/Show Border</p>
                             <select class="form-control minimal"
                                     value="@ThemeState.Settings.BorderStyle"
-                                    @onchange="@(e => Update(s => s.BorderStyle = e.Value?.ToString() ?? "solid"))">
-                                <option value="solid">Style 1</option>
-                                <option value="dotted">Style 2</option>
-                                <option value="dashed">Style 3</option>
-                                <option value="none">No Border</option>
+                                    @onchange="@(e => Update(s => s.BorderStyle = e.Value?.ToString()))">
+                                <option value="solid">Show Border</option>
+                                <option value="none">Hide Border</option>
                             </select>
                         </li>
 
