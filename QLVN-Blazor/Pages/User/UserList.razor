@@ -2,45 +2,195 @@
 @using QLVN_Contracts.Dtos.User
 @using QLVN_Blazor.Services
 @inject UserApiClient UserService
+@inject IJSRuntime JS
 
-<h3>Danh sách người dùng</h3>
+<div class="page-header">
+    <div class="row align-items-end">
+        <div class="col-lg-8">
+            <div class="page-header-title">
+                <div class="d-inline">
+                    <h4>Quản lý người dùng</h4>
+                    <span>Danh sách tài khoản hệ thống QLVN</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-@if (users == null)
-{
-    <p><em>Đang tải...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Họ và Tên</th>
-                <th>UserName</th>
-                <th>Nhóm</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in users)
-            {
-                <tr>
-                    <td>@user.Id</td>
-                    <td>@user.Name</td>
-                    <td>@user.UserName</td>
-                    <td>@user.GroupId</td>
-                    <td>@user.RowStatus</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<div class="page-body">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Danh sách người dùng</h5>
+                    <div class="card-header-right">
+                        <ul class="list-unstyled card-option">
+                            <li><i class="feather icon-maximize full-card"></i></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-block">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <button type="button" class="btn btn-primary m-b-20" @onclick="OpenAddModal">
+                                <i class="feather icon-plus"></i> + Add Row
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dt-responsive table-responsive">
+                        <div class="dataTables_wrapper dt-bootstrap4">
+                            <div class="row">
+                                <div class="col-xs-12 col-sm-12 col-md-6">
+                                    <div class="dataTables_length">
+                                        <label>Show 
+                                            <select class="form-control input-sm">
+                                                <option value="10">10</option>
+                                                <option value="25">25</option>
+                                            </select> entries
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-12 col-md-6 text-right">
+                                    <div class="dataTables_filter">
+                                        <label>Search:<input type="search" class="form-control input-sm" @oninput="OnSearch"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <table class="table table-striped table-bordered nowrap dataTable">
+                                <thead>
+                                    <tr role="row">
+                                        <th>ID</th>
+                                        <th>Họ và Tên</th>
+                                        <th>Tài khoản</th>
+                                        <th>Nhóm</th>
+                                        <th>Trạng thái</th>
+                                        <th style="width: 100px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (filteredUsers == null)
+                                    {
+                                        <tr><td colspan="6" class="text-center">Đang tải dữ liệu...</td></tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var user in filteredUsers)
+                                        {
+                                            <tr>
+                                                <td>@user.Id</td>
+                                                <td><strong>@user.Name</strong></td>
+                                                <td>@user.UserName</td>
+                                                <td><span class="badge badge-info">@user.GroupId</span></td>
+                                                <td>
+                                                    @if (user.RowStatus == 1)
+                                                    {
+                                                        <span class="label label-success">Hoạt động</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="label label-danger">Khóa</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-warning btn-sm" @onclick="() => OpenEditModal(user.Id)">
+                                                        <i class="feather icon-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm" @onclick="() => ConfirmDelete(user.Id)">
+                                                        <i class="feather icon-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-    private List<UserDto>? users;
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // 1. Chờ một chút xíu (khoảng 500ms - 1000ms)
+                await Task.Delay(700);
+
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
+               
+                // Load the Dashboard Logic
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/analytic-dashboard.min.js");
+
+                // load lại các js
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+
+
+                // 2. GỌI HÀM TẮT LOADER
+                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Dashboard Script Load Error: {ex.Message}");
+            }
+        }
+    }
+
+    private List<UserDto>? allUsers;
+    private List<UserDto>? filteredUsers;
+    private string searchTerm = "";
 
     protected override async Task OnInitializedAsync()
     {
-        users = await UserService.GetUserAllSync();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allUsers = await UserService.GetUserAllSync();
+        filteredUsers = allUsers;
+    }
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            filteredUsers = allUsers;
+        else
+            filteredUsers = allUsers?.Where(u => u.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) 
+                                           || u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void OpenAddModal()
+    {
+        // Logic mở Modal hoặc chuyển trang thêm mới
+        // NavigationManager.NavigateTo("/users/create");
+    }
+
+    private void OpenEditModal(string id)
+    {
+        // Logic mở Modal sửa
+    }
+
+    private async Task ConfirmDelete(string id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa người dùng này?");
+        if (confirmed)
+        {
+            await UserService.DeleteAsync(id);
+            await LoadData();
+        }
     }
 }

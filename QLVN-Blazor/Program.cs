@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using QLVN_Blazor;
 using QLVN_Blazor.Handlers;
 using QLVN_Blazor.Services;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Http;  
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
