@@ -123,10 +123,14 @@
 
                 // 2. GỌI HÀM TẮT LOADER
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+
+
+                // Initialize DataTable
+                await JS.InvokeVoidAsync("initUserDataTable");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Dashboard Script Load Error: {ex.Message}");
+                Console.WriteLine($"UserList Load Error: {ex.Message}");
             }
         }
     }
@@ -140,22 +144,6 @@
     private async Task LoadData()
     {
         allUsers = (await UserService.GetUserAllSync())?.ToList() ?? new List<UserDto>();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            try
-            {
-                // Initialize DataTable
-                await JS.InvokeVoidAsync("initUserDataTable");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error initializing DataTable: {ex.Message}");
-            }
-        }
     }
 
     private void OpenAddModal()

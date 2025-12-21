@@ -15,10 +15,9 @@ builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri("https://localhost:5084")
 });
-builder.Services.AddScoped<UserApiClient>();
-builder.Services.AddScoped<NotificationService>();
-// Đăng ký Handler
-builder.Services.AddScoped<JwtAuthorizationHandler>();
+
+
+
 
 // Cấu hình HttpClient có sử dụng JwtAuthorizationHandler
 builder.Services.AddHttpClient("QLVN.API", client =>
@@ -33,7 +32,8 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().Cre
 
 builder.Services.AddScoped<UserApiClient>();
 builder.Services.AddScoped<NotificationService>();
-
+// Đăng ký Handler
+builder.Services.AddScoped<JwtAuthorizationHandler>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();

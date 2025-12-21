@@ -9,7 +9,6 @@ using QLVN_Domain.Interfaces;
 using QLVN_Infrastructure; // Chứa DbContext
 using QLVN_Infrastructure.Repositories;
 using System.Text;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
