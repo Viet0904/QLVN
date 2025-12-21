@@ -25,4 +25,6 @@
     <ProjectReference Include="..\QLVN-Contracts\QLVN-Contracts.csproj" />
   </ItemGroup>
 
+
+
 </Project>
