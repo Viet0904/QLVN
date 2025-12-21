@@ -1,5 +1,5 @@
 ﻿@inherits LayoutComponentBase
-
+@inject IJSRuntime JS
 <div id="pcoded" class="pcoded">
     <div class="pcoded-overlay-box"></div>
     <div class="pcoded-container navbar-wrapper">
@@ -28,3 +28,18 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            // Gọi mỗi khi render lại để gắn lại sự kiện cho các element mới
+            await JS.InvokeVoidAsync("initAdminFunctions");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"MainLayout JS Error: {ex.Message}");
+        }
+    }
+}
