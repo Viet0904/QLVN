@@ -1,158 +1,136 @@
-﻿@inject IJSRuntime JSRuntime
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 
-<div id="styleSelector" class="pcoded-color-selector @(_isOpen ? "open" : "")" style="z-index: 99999 !important;">
-    <div class="selector-toggle" @onclick="ToggleOpen">
-        <a href="javascript:void(0)"></a>
+<div id="styleSelector" class="@(_isOpen ? "open" : "")">
+    <div class="selector-toggle">
+        <a href="javascript:void(0)" @onclick="ToggleSelector"></a>
     </div>
     <ul>
         <li>
             <p class="selector-title main-title st-main-title"><b>Adminty </b>Customizer</p>
-            <span class="text-muted">Tùy chỉnh giao diện hệ thống</span>
+            <span class="text-muted">Live customizer with tons of options</span>
+        </li>
+        <li>
+            <p class="selector-title">Main layouts</p>
+        </li>
+        <li>
+            <div class="theme-color">
+                <a href="javascript:void(0)" class="navbar-theme" @onclick='() => SetTheme("navbar", "themelight1")' navbar-theme="themelight1">
+                    <span class="head"></span><span class="cont"></span>
+                </a>
+                <a href="javascript:void(0)" class="navbar-theme" @onclick='() => SetTheme("navbar", "theme1")' navbar-theme="theme1">
+                    <span class="head"></span><span class="cont"></span>
+                </a>
+            </div>
         </li>
     </ul>
 
-    <div class="style-cont m-t-10" style="overflow-y: auto; height: calc(100vh - 400px); padding: 15px;">
+    <div class="style-cont m-t-10" style="height: calc(100vh - 440px); overflow-y: auto;">
         <ul class="nav nav-tabs tabs" role="tablist">
-            <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#sel-layout" role="tab">Layouts</a></li>
-            <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#sel-sidebar-setting" role="tab">Sidebar Settings</a></li>
+            <li class="nav-item">
+                <a class="nav-link @(_activeTab == "layout" ? "active" : "")" @onclick='() => _activeTab = "layout"'>Layouts</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(_activeTab == "sidebar" ? "active" : "")" @onclick='() => _activeTab = "sidebar"'>Sidebar Settings</a>
+            </li>
         </ul>
 
         <div class="tab-content tabs">
-            <div class="tab-pane active" id="sel-layout" role="tabpanel">
-                <ul>
-                    <li class="theme-option">
-                        <div class="checkbox-fade fade-in-primary">
-                            <label>
-                                <input type="checkbox" id="sidebar-position" checked>
-                                <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
-                                <span>Fixed Sidebar Position</span>
-                            </label>
-                        </div>
-                    </li>
-                    <li class="theme-option">
-                        <div class="checkbox-fade fade-in-primary">
-                            <label>
-                                <input type="checkbox" id="header-position" checked>
-                                <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
-                                <span>Fixed Header Position</span>
-                            </label>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="tab-pane" id="sel-sidebar-setting" role="tabpanel">
-                <ul>
-                    <li class="theme-option">
-                        <p class="sub-title drp-title">Menu Type</p>
-                        <div class="form-radio" id="menu-effect">
-                            <div class="radio radio-inverse radio-inline">
+            @if (_activeTab == "layout")
+            {
+                <div class="tab-pane active" role="tabpanel">
+                    <ul>
+                        <li class="theme-option">
+                            <div class="checkbox-fade fade-in-primary">
                                 <label>
-                                    <input type="radio" name="radio" value="st6" @onclick='(() => ChangeMenuType("st6"))' checked>
-                                    <i class="helper"></i><span class="micon st6"><i class="feather icon-command"></i></span>
+                                    <input type="checkbox" id="sidebar-position" checked="@_isSidebarFixed" @onchange="ToggleSidebarPosition">
+                                    <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
+                                    <span>Fixed Sidebar Position</span>
                                 </label>
                             </div>
-                            <div class="radio radio-primary radio-inline">
+                        </li>
+                        <li class="theme-option">
+                            <div class="checkbox-fade fade-in-primary">
                                 <label>
-                                    <input type="radio" name="radio" value="st5" @onclick='(() => ChangeMenuType("st5"))'>
-                                    <i class="helper"></i><span class="micon st5"><i class="feather icon-command"></i></span>
+                                    <input type="checkbox" id="header-position" checked="@_isHeaderFixed" @onchange="ToggleHeaderPosition">
+                                    <span class="cr"><i class="cr-icon feather icon-check txt-success f-w-600"></i></span>
+                                    <span>Fixed Header Position</span>
                                 </label>
                             </div>
-                        </div>
-                    </li>
-                    <li class="theme-option">
-                        <p class="sub-title drp-title">SideBar Effect</p>
-                        <select id="vertical-menu-effect" class="form-control minimal">
-                            <option value="shrink">shrink</option>
-                            <option value="overlay">overlay</option>
-                            <option value="push">Push</option>
-                        </select>
-                    </li>
-                    <li class="theme-option">
-                        <p class="sub-title drp-title">Drop-Down Icon</p>
-                        <select id="vertical-dropdown-icon" class="form-control minimal">
-                            <option value="style1">Style 1</option>
-                            <option value="style2">Style 2</option>
-                            <option value="style3">Style 3</option>
-                        </select>
-                    </li>
-                    <li class="theme-option">
-                        <p class="sub-title drp-title">Sub Menu Drop-down Icon</p>
-                        <select id="vertical-subitem-icon" class="form-control minimal">
-                            <option value="style1">Style 1</option>
-                            <option value="style2">Style 2</option>
-                            <option value="style3">Style 3</option>
-                            <option value="style4">Style 4</option>
-                            <option value="style5">Style 5</option>
-                            <option value="style6">Style 6</option>
-                        </select>
-                    </li>
-                </ul>
-            </div>
+                        </li>
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <div class="tab-pane active" role="tabpanel">
+                    <ul>
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">SideBar Effect</p>
+                            <select id="vertical-menu-effect" class="form-control minimal" @onchange='(e) => UpdateSelect("vertical-menu-effect", e)'>
+                                <option value="shrink">shrink</option>
+                                <option value="overlay">overlay</option>
+                                <option value="push">Push</option>
+                            </select>
+                        </li>
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Hide/Show Border</p>
+                            <select id="vertical-border-style" class="form-control minimal" @onchange='(e) => UpdateSelect("vertical-border-style", e)'>
+                                <option value="solid">Style 1</option>
+                                <option value="dotted">Style 2</option>
+                                <option value="dashed">Style 3</option>
+                                <option value="none">No Border</option>
+                            </select>
+                        </li>
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Drop-Down Icon</p>
+                            <select id="vertical-dropdown-icon" class="form-control minimal" @onchange='(e) => UpdateSelect("vertical-dropdown-icon", e)'>
+                                <option value="style1">Style 1</option>
+                                <option value="style2">Style 2</option>
+                                <option value="style3">Style 3</option>
+                            </select>
+                        </li>
+                        <li class="theme-option">
+                            <p class="sub-title drp-title">Sub Menu Drop-Down Icon</p>
+                            <select id="vertical-subitem-icon" class="form-control minimal" @onchange='(e) => UpdateSelect("vertical-subitem-icon", e)'>
+                                <option value="style1">Style 1</option>
+                                <option value="style2">Style 2</option>
+                                <option value="style3">Style 3</option>
+                                <option value="style4">Style 4</option>
+                                <option value="style5">Style 5</option>
+                                <option value="style6">Style 6</option>
+                            </select>
+                        </li>
+                    </ul>
+                </div>
+            }
         </div>
-
-        <ul class="m-t-20">
-            <li><p class="selector-title">Header Brand Color</p></li>
-            <li class="theme-option">
-                <div class="theme-color">
-                    @for (int i = 1; i <= 5; i++)
-                    {
-                        var theme = "theme" + i;
-                        <a href="javascript:void(0)" class="logo-theme" logo-theme="@theme"><span class="head"></span><span class="cont"></span></a>
-                    }
-                </div>
-            </li>
-
-            <li><p class="selector-title">Header Color</p></li>
-            <li class="theme-option">
-                <div class="theme-color">
-                    @for (int i = 1; i <= 6; i++)
-                    {
-                        var theme = "theme" + i;
-                        <a href="javascript:void(0)" class="header-theme" header-theme="@theme"><span class="head"></span><span class="cont"></span></a>
-                    }
-                </div>
-            </li>
-
-            <li><p class="selector-title">Active Link Color</p></li>
-            <li class="theme-option">
-                <div class="theme-color">
-                    @for (int i = 1; i <= 12; i++)
-                    {
-                        var theme = "theme" + i;
-                        <a href="javascript:void(0)" class="active-item-theme small" active-item-theme="@theme">&nbsp;</a>
-                    }
-                </div>
-            </li>
-
-            <li><p class="selector-title">Menu Caption Color</p></li>
-            <li class="theme-option">
-                <div class="theme-color">
-                    @for (int i = 1; i <= 6; i++)
-                    {
-                        var theme = "theme" + i;
-                        <a href="javascript:void(0)" class="leftheader-theme small" lheader-theme="@theme">&nbsp;</a>
-                    }
-                </div>
-            </li>
-        </ul>
     </div>
 </div>
 
 @code {
     private bool _isOpen = false;
-    private void ToggleOpen() => _isOpen = !_isOpen;
+    private string _activeTab = "layout";
+    private bool _isSidebarFixed = true;
+    private bool _isHeaderFixed = true;
 
-    private async Task ChangeMenuType(string value)
+    private void ToggleSelector() => _isOpen = !_isOpen;
+
+    private async Task SetTheme(string type, string value) =>
+        await JSRuntime.InvokeVoidAsync("adminThemeBridge.setTheme", type, value);
+
+    private async Task ToggleSidebarPosition(ChangeEventArgs e)
     {
-        await JSRuntime.InvokeVoidAsync("handleMenuType", value);
+        _isSidebarFixed = (bool)e.Value!;
+        await JSRuntime.InvokeVoidAsync("adminThemeBridge.setSidebarPosition", _isSidebarFixed);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task ToggleHeaderPosition(ChangeEventArgs e)
     {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("initThemeSettings");
-        }
+        _isHeaderFixed = (bool)e.Value!;
+        await JSRuntime.InvokeVoidAsync("adminThemeBridge.setHeaderPosition", _isHeaderFixed);
     }
+
+    private async Task UpdateSelect(string id, ChangeEventArgs e) =>
+        await JSRuntime.InvokeVoidAsync("adminThemeBridge.setSelectOption", id, e.Value?.ToString());
 }
