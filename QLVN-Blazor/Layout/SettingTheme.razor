@@ -1,4 +1,7 @@
-﻿<div id="styleSelector">
+﻿@inject IJSRuntime JS
+
+
+<div id="styleSelector">
 
     <!-- Toggle -->
     <div class="selector-toggle">
@@ -59,7 +62,13 @@
                     <li class="theme-option">
                         <div class="checkbox-fade fade-in-primary">
                             <label>
-                                <input type="checkbox" id="sidebar-position" checked>
+                                <input type="checkbox"
+                                       @bind="FixedSidebar"
+                                       @bind:after="OnFixedSidebarChanged" />
+
+
+
+
                                 <span class="cr">
                                     <i class="cr-icon feather icon-check txt-success f-w-600"></i>
                                 </span>
@@ -92,7 +101,12 @@
                         <div class="form-radio" id="menu-effect">
                             <div class="radio radio-inverse radio-inline">
                                 <label>
-                                    <input type="radio" name="menu-type" value="st6" checked>
+                                    <input type="radio"
+                                           name="menuType"
+                                           value="st6"
+                                           checked="@(MenuType == "st6")"
+                                           @onchange="OnMenuTypeChanged" />
+                                    <span>Simple Icon</span>
                                     <i class="helper"></i>
                                     <span class="micon st6">
                                         <i class="feather icon-command"></i>
@@ -102,7 +116,12 @@
 
                             <div class="radio radio-primary radio-inline">
                                 <label>
-                                    <input type="radio" name="menu-type" value="st5">
+                                    <input type="radio"
+                                           name="menuType"
+                                           value="st5"
+                                           checked="@(MenuType == "st5")"
+                                           @onchange="OnMenuTypeChanged" />
+                                    <span>Color Icon</span>
                                     <i class="helper"></i>
                                     <span class="micon st5">
                                         <i class="feather icon-command"></i>
@@ -255,4 +274,36 @@
 
 
 @code {
+    bool FixedSidebar = true;
+    string MenuType = "st6";
+
+    async Task OnMenuTypeChanged(ChangeEventArgs e)
+    {
+        MenuType = e.Value?.ToString() ?? "st6";
+
+        await JS.InvokeVoidAsync(
+            "themeInterop.setMenuType",
+            MenuType
+        );
+    }
+
+
+    async Task OnFixedSidebarChanged()
+    {
+        await JS.InvokeVoidAsync(
+            "themeInterop.setSidebarFixed",
+            FixedSidebar
+        );
+    }
+
+    // async Task OnFixedSidebarChanged()
+    // {
+    //     await JS.InvokeVoidAsync(
+    //         "themeInterop.toggleFixedSidebar",
+    //         FixedSidebar
+    //     );
+    // }
+
+
+
 }
