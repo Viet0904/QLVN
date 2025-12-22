@@ -1,4 +1,5 @@
-﻿@using QLVN_Contracts.Dtos.User
+﻿@page "/users"
+@using QLVN_Contracts.Dtos.User
 @using QLVN_Blazor.Services
 @inject UserApiClient UserService
 @inject IJSRuntime JS
@@ -17,89 +18,91 @@
 </div>
 
 <div class="page-body">
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Danh sách người dùng</h5>
-                    <div class="card-header-right">
-                        <ul class="list-unstyled card-option">
-                            <li><i class="feather icon-maximize full-card"></i></li>
-                        </ul>
-                    </div>
+    <div class="card">
+        <div class="card-header">
+            <h5>Danh sách người dùng</h5>
+            <div class="card-header-right">
+                <ul class="list-unstyled card-option">
+                    <li><i class="feather icon-maximize full-card"></i></li>
+                </ul>
+            </div>
+        </div>
+        <div class="card-block">
+            <div class="row m-b-20">
+                <div class="col-sm-12">
+                    <button type="button" class="btn btn-primary" @onclick="OpenAddModal">
+                        <i class="feather icon-plus"></i> Thêm người dùng
+                    </button>
                 </div>
-                <div class="card-block">
-                    <div class="row m-b-20">
-                        <div class="col-sm-12">
-                            <button type="button" class="btn btn-primary" @onclick="OpenAddModal">
-                                <i class="feather icon-plus"></i> Thêm người dùng
-                            </button>
-                        </div>
-                    </div>
+            </div>
 
-                    <div class="dt-responsive table-responsive">
-                        <table id="user-datatable" class="table table-striped table-bordered nowrap">
-                            <thead>
-                                <tr role="row">
-                                    <th>ID</th>
-                                    <th>Họ và Tên</th>
-                                    <th>Tài khoản</th>
-                                    <th>Nhóm</th>
-                                    <th>Trạng thái</th>
-                                    <th style="width: 100px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (allUsers != null)
-                                {
-                                    @foreach (var user in allUsers)
-                                    {
-                                        <tr>
-                                            <td>@user.Id</td>
-                                            <td><strong>@user.Name</strong></td>
-                                            <td>@user.UserName</td>
-                                            <td><span class="badge badge-info">@user.GroupId</span></td>
-                                            <td>
-                                                @if (user.RowStatus == 1)
-                                                {
-                                                    <span class="label label-success">Hoạt động</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="label label-danger">Khóa</span>
-                                                }
-                                            </td>
-                                            <td class="text-center">
-                                                <button class="btn btn-warning btn-sm" title="Sửa" @onclick="() => OpenEditModal(user.Id)">
-                                                    <i class="feather icon-edit"></i>
-                                                </button>
-                                                <button class="btn btn-danger btn-sm" title="Xóa" @onclick="() => ConfirmDelete(user.Id)">
-                                                    <i class="feather icon-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                            <tfoot>
+            <div class="dt-responsive table-responsive">
+                <table id="footer-search" class="table table-striped table-bordered nowrap">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Họ và Tên</th>
+                            <th>Tài khoản</th>
+                            <th>Nhóm</th>
+                            <th>Trạng thái</th>
+                            <th style="width: 100px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (allUsers != null)
+                        {
+                            @foreach (var user in allUsers)
+                            {
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Họ và Tên</th>
-                                    <th>Tài khoản</th>
-                                    <th>Nhóm</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
+                                    <td>@user.Id</td>
+                                    <td><strong>@user.Name</strong></td>
+                                    <td>@user.UserName</td>
+                                    <td><span class="badge badge-info">@user.GroupId</span></td>
+                                    <td>
+                                        @if (user.RowStatus == 1)
+                                        {
+                                            <span class="label label-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="label label-danger">Khóa</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-sm" title="Sửa" @onclick="() => OpenEditModal(user.Id)">
+                                            <i class="feather icon-edit"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" title="Xóa" @onclick="() => ConfirmDelete(user.Id)">
+                                            <i class="feather icon-trash"></i>
+                                        </button>
+                                    </td>
                                 </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th><input type="text" class="form-control" placeholder="Tìm ID" /></th>
+                            <th><input type="text" class="form-control" placeholder="Tìm Họ tên" /></th>
+                            <th><input type="text" class="form-control" placeholder="Tìm Tài khoản" /></th>
+                            <th><input type="text" class="form-control" placeholder="Tìm Nhóm" /></th>
+                            <th><input type="text" class="form-control" placeholder="Tìm Trạng thái" /></th>
+                            <th class="non-searchable"></th>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
 @code {
+    private List<UserDto>? allUsers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -107,25 +110,20 @@
         {
             try
             {
-                // 1. Chờ một chút xíu (khoảng 500ms - 1000ms)
-                await Task.Delay(700);
+                // Chờ DOM render xong hoàn toàn
+                await Task.Delay(500);
 
+                // Load các script cần thiết từ root wwwroot
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
-
-                // Load the Dashboard Logic
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/analytic-dashboard.min.js");
 
-                // load lại các js
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
 
-
-                // 2. GỌI HÀM TẮT LOADER
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
 
-
-                // Initialize DataTable
+                // Khởi tạo DataTable với tính năng Footer Search
                 await JS.InvokeVoidAsync("initUserDataTable");
             }
             catch (Exception ex)
@@ -133,12 +131,6 @@
                 Console.WriteLine($"UserList Load Error: {ex.Message}");
             }
         }
-    }
-    private List<UserDto>? allUsers;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
     }
 
     private async Task LoadData()
@@ -148,12 +140,12 @@
 
     private void OpenAddModal()
     {
-        // Logic thêm mới
+        // Logic mở Modal thêm mới người dùng
     }
 
     private void OpenEditModal(string id)
     {
-        // Logic sửa
+        // Logic mở Modal chỉnh sửa người dùng theo ID
     }
 
     private async Task ConfirmDelete(string id)
@@ -163,7 +155,9 @@
         {
             await UserService.DeleteAsync(id);
             await LoadData();
-            // Reinitialize DataTable
+
+            // Re-render bảng và khởi tạo lại DataTable
+            StateHasChanged();
             await JS.InvokeVoidAsync("reinitUserDataTable");
         }
     }
