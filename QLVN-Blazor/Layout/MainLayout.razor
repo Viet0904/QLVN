@@ -29,17 +29,3 @@
     </div>
 </div>
 
-@code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        try
-        {
-            // Gọi mỗi khi render lại để gắn lại sự kiện cho các element mới
-            await JS.InvokeVoidAsync("initAdminFunctions");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"MainLayout JS Error: {ex.Message}");
-        }
-    }
-}
