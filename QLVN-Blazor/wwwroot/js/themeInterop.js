@@ -36,3 +36,23 @@
     }
     
 };
+
+// wwwroot/js/themeInterop.js - Bridge cho Blazor
+window.initCustomPlugins = function () {
+    // Re-init slimScroll và tooltips sau Blazor render
+    if (typeof $.fn.slimScroll === 'function') {
+        $('.slimscroll').slimScroll({ destroy: true }).slimScroll({
+            height: '100%',
+            size: '5px'
+        });
+    }
+
+    // Re-init Bootstrap tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        var tooltip = bootstrap.Tooltip.getInstance(el);
+        if (tooltip) tooltip.dispose();
+        new bootstrap.Tooltip(el);
+    });
+
+    console.log('Plugins re-initialized for Blazor.');
+};

@@ -487,7 +487,7 @@
             try
             {
                 // 1. Chờ một chút xíu (khoảng 500ms - 1000ms)
-                await Task.Delay(700);
+                // await Task.Delay(700);
 
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
                 // Chart.js
@@ -511,7 +511,7 @@
 
 
                 // 2. GỌI HÀM TẮT LOADER
-                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+                // await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
             }
             catch (Exception ex)
             {

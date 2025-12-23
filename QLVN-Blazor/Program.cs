@@ -32,6 +32,7 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().Cre
 
 builder.Services.AddScoped<UserApiClient>();
 builder.Services.AddScoped<NotificationService>();
+
 // Đăng ký Handler
 builder.Services.AddScoped<JwtAuthorizationHandler>();
 builder.Services.AddBlazoredLocalStorage();

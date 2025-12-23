@@ -1,22 +1,34 @@
 ﻿@page "/users"
 @using QLVN_Contracts.Dtos.User
 @using QLVN_Blazor.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject UserApiClient UserService
+@inject NotificationService NotificationService
 @inject IJSRuntime JS
 @implements IDisposable
 
 <h3>Danh sách người dùng</h3>
 
-@if (allUsers == null)
+@if (isLoading)
 {
-    <p>Đang tải dữ liệu...</p>
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Đang tải dữ liệu...</p>
+    </div>
 }
-else if (allUsers.Count == 0)
+else if (allUsers == null || !allUsers.Any())
 {
-    <p>Không có dữ liệu người dùng.</p>
+    <div class="alert alert-warning">Không có dữ liệu người dùng.</div>
+    <button class="btn btn-primary" @onclick="OpenAddModal">Thêm người dùng mới</button>
 }
 else
 {
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="OpenAddModal">Thêm người dùng mới</button>
+    </div>
+
     <table id="myTable" class="display table table-striped table-hover" style="width:100%">
         <thead>
             <tr>
@@ -30,14 +42,14 @@ else
         <tbody>
             @foreach (var user in allUsers)
             {
-                <tr>
+                <tr data-user-id="@user.Id">
                     <td>@user.Id</td>
                     <td>@user.Name</td>
                     <td>@user.Email</td>
                     <td>@user.Phone</td>
                     <td>
                         <button class="btn btn-sm btn-warning" @onclick="() => OpenEditModal(user.Id)">Sửa</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(user.Id)">Xóa</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => OpenDeleteModal(user.Id)">Xóa</button>
                     </td>
                 </tr>
             }
@@ -45,52 +57,356 @@ else
     </table>
 }
 
+<!-- Modal Add/Edit User -->
+<div class="modal fade @(isModalOpen ? "show" : "")" id="userModal" tabindex="-1" style="display: @(isModalOpen ? "block" : "none");" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(isEditMode ? "Chỉnh sửa người dùng" : "Thêm người dùng mới")</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@currentUser" OnValidSubmit="@HandleSubmitAsync" FormName="UserForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="Name" class="form-label">Tên</label>
+                        <InputText id="Name" class="form-control" @bind-Value="currentUser.Name" />
+                        <ValidationMessage For="@(() => currentUser.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="UserName" class="form-label">Tên đăng nhập</label>
+                        <InputText id="UserName" class="form-control" @bind-Value="currentUser.UserName" />
+                        <ValidationMessage For="@(() => currentUser.UserName)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Email" class="form-label">Email</label>
+                        <InputText id="Email" class="form-control" @bind-Value="currentUser.Email" />
+                        <ValidationMessage For="@(() => currentUser.Email)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Phone" class="form-label">Điện thoại</label>
+                        <InputText id="Phone" class="form-control" @bind-Value="currentUser.Phone" />
+                        <ValidationMessage For="@(() => currentUser.Phone)" />
+                    </div>
+
+                    @if (isAddMode)
+                    {
+                        <div class="mb-3">
+                            <label for="Password" class="form-label">Mật khẩu</label>
+                            <InputText id="Password" type="password" class="form-control" @bind-Value="@password" />
+                            <ValidationMessage For="@(() => password)" />
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label for="GroupId" class="form-label">Nhóm</label>
+                        <InputText id="GroupId" class="form-control" @bind-Value="currentUser.GroupId" />
+                        <ValidationMessage For="@(() => currentUser.GroupId)" />
+                    </div>
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Đóng</button>
+                <button type="submit" class="btn btn-primary" form="UserForm">@(isEditMode ? "Cập nhật" : "Thêm mới")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirm Delete -->
+<div class="modal fade @(isDeleteModalOpen ? "show" : "")" id="deleteModal" tabindex="-1" style="display: @(isDeleteModalOpen ? "block" : "none");">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa người dùng <strong>@selectedUserName</strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Hủy</button>
+                <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteAsync">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @code {
     private List<UserDto>? allUsers;
+    private bool isLoading = true;
+    private bool isDataTableInitialized = false;
+    private bool isModalOpen = false;
+    private bool isEditMode = false;
+    private bool isAddMode => !isEditMode;
+    private bool isDeleteModalOpen = false;
+    private UserDto? currentUser = new();
+    private string? selectedUserId;
+    private string selectedUserName = string.Empty;
+    private string password = string.Empty; // Chỉ cho Add
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        // Best Practice: Load data async không block UI, với try-catch để handle API errors
+        try
+        {
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            // Notification fallback thay vì crash
+            await NotificationService.ShowErrorAsync($"Lỗi tải dữ liệu: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged(); // Trigger re-render nếu cần
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && allUsers?.Count > 0)
+        // Best Practice: Giống Home - Chỉ xử lý ở firstRender để tránh duplicate calls khi modal open/close
+        if (firstRender)
         {
-            await JS.InvokeVoidAsync("initDataTable", "#myTable");
+            try
+            {
+                // 1. Delay nhỏ (500ms) để DOM ready, giống Home (tránh theme scripts conflict)
+                await Task.Delay(500);
 
+                // Load scripts essentials cho UserList (light hơn Home: Chỉ DataTables + theme basics)
+                // Check existence trước load để tránh duplicate (từ adminAssetManager)
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables.js"); // DataTables core
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables_custom.js"); // Custom init
 
-            await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+                // Reload theme scripts nhẹ (không cần analytic-dashboard vì không có charts)
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+
+                // 2. Hide loader sau scripts ready (sync với MainLayout/Home)
+                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+
+                // 3. Init DataTable chỉ sau khi DOM/scripts ready (tránh overlap với customizer)
+                if (allUsers?.Any() == true)
+                {
+                    await JS.InvokeVoidAsync("initDataTable", "#myTable");
+                    isDataTableInitialized = true;
+                }
+
+                // 4. Fallback hide customizer (chỉ ở UserList, tránh UI lỗi overlap)
+                await JS.InvokeVoidAsync("destroyCustomizer");
+                await JS.InvokeVoidAsync("eval",
+                    "$('#pcoded-mCustomizer').addClass('d-none').hide(); " +
+                    "$('.customizer-toggle').hide();");
+
+                // Re-init plugins (từ themeInterop.js) để modals/DataTables mượt
+                await JS.InvokeVoidAsync("initCustomPlugins");
+
+                Console.WriteLine("UserList scripts and UI initialized successfully.");
+            }
+            catch (Exception ex)
+            {
+                // Error handling giống Home: Log + fallback
+                Console.WriteLine($"UserList Script/UI Load Error: {ex.Message}");
+                // Fallback: Hide loader/customizer bằng CSS
+                await JS.InvokeVoidAsync("eval",
+                    "$('.theme-loader').hide(); " +
+                    "$('#pcoded-mCustomizer').hide();");
+                // Fallback init DataTable nếu data ready
+                if (allUsers?.Any() == true && !isDataTableInitialized)
+                {
+                    await JS.InvokeVoidAsync("initDataTable", "#myTable");
+                    isDataTableInitialized = true;
+                }
+            }
         }
     }
 
     private async Task LoadData()
     {
-        allUsers = (await UserService.GetUserAllSync())?.ToList() ?? new();
-        StateHasChanged(); // Đảm bảo render lại
+        // Best Practice: Async load từ API, với null-check
+        allUsers = await UserService.GetUserAllSync();
+        StateHasChanged(); // Trigger re-render table body
     }
 
-    // Khi xóa xong, reload dữ liệu và khởi tạo lại DataTable
-    private async Task ConfirmDelete(string id)
+    private void OpenAddModal()
     {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa người dùng này?");
-        if (confirmed)
-        {
-            await UserService.DeleteAsync(id);
-            await LoadData();
+        isEditMode = false;
+        currentUser = new UserDto { RowStatus = 1 }; // Default active
+        password = string.Empty;
+        isModalOpen = true;
+        selectedUserId = null;
+        StateHasChanged();
+    }
 
-            // Re-init DataTable sau khi bảng được render lại
-            await JS.InvokeVoidAsync("reinitDataTable", "#myTable");
+    private async Task OpenEditModal(string id)
+    {
+        try
+        {
+            var user = await UserService.GetByIdAsync(id);
+            if (user != null)
+            {
+                isEditMode = true;
+                currentUser = user;
+                isModalOpen = true;
+                selectedUserId = id;
+                StateHasChanged();
+            }
+            else
+            {
+                await NotificationService.ShowErrorAsync("Không tìm thấy người dùng để chỉnh sửa.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowErrorAsync($"Lỗi tải thông tin: {ex.Message}");
         }
     }
 
-    private void OpenEditModal(string id)
+    private void OpenDeleteModal(string id)
     {
-        // Logic mở modal edit
+        selectedUserId = id;
+        var user = allUsers?.FirstOrDefault(u => u.Id == id);
+        selectedUserName = user?.Name ?? "Không xác định";
+        isDeleteModalOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+        currentUser = new();
+        password = string.Empty;
+        StateHasChanged();
+    }
+
+    private void CloseDeleteModal()
+    {
+        isDeleteModalOpen = false;
+        selectedUserId = null;
+        selectedUserName = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        try
+        {
+            bool success = false;
+            if (isAddMode)
+            {
+                // Mapping DTO: Giả sử CreateUserRequest có fields tương ứng
+                var request = new CreateUserRequest
+                {
+                    Name = currentUser.Name,
+                    UserName = currentUser.UserName,
+                    Email = currentUser.Email,
+                    Phone = currentUser.Phone,
+                    GroupId = currentUser.GroupId,
+                    Password = password
+                };
+                success = await UserService.CreateAsync(request);
+                if (success)
+                {
+                    await LoadData();
+                    await JS.InvokeVoidAsync("reinitDataTable", "#myTable");
+                    await NotificationService.ShowSuccessAsync("Thêm người dùng thành công!");
+                }
+            }
+            else
+            {
+                var request = new UpdateUserRequest
+                {
+                    Name = currentUser.Name,
+                    UserName = currentUser.UserName,
+                    Email = currentUser.Email,
+                    Phone = currentUser.Phone,
+                    GroupId = currentUser.GroupId
+                };
+                success = await UserService.UpdateAsync(selectedUserId!, request);
+                if (success)
+                {
+                    await UpdateDataTableRow(selectedUserId!, currentUser);
+                    var localUser = allUsers?.FirstOrDefault(u => u.Id == selectedUserId);
+                    if (localUser != null)
+                    {
+                        localUser.Name = currentUser.Name;
+                        localUser.Email = currentUser.Email;
+                        localUser.Phone = currentUser.Phone;
+                        localUser.GroupId = currentUser.GroupId;
+                    }
+                    await NotificationService.ShowSuccessAsync("Cập nhật người dùng thành công!");
+                }
+            }
+
+            if (success)
+            {
+                CloseModal();
+            }
+            else
+            {
+                await NotificationService.ShowErrorAsync("Thao tác thất bại. Vui lòng thử lại.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowErrorAsync($"Lỗi thực hiện: {ex.Message}");
+        }
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (selectedUserId == null) return;
+
+        try
+        {
+            var success = await UserService.DeleteAsync(selectedUserId);
+            if (success)
+            {
+                await RemoveDataTableRow(selectedUserId);
+                allUsers?.RemoveAll(u => u.Id == selectedUserId);
+                await NotificationService.ShowSuccessAsync("Xóa người dùng thành công!");
+            }
+            else
+            {
+                await NotificationService.ShowErrorAsync("Xóa thất bại. Vui lòng thử lại.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowErrorAsync($"Lỗi xóa: {ex.Message}");
+        }
+        finally
+        {
+            CloseDeleteModal();
+        }
+    }
+
+    private async Task UpdateDataTableRow(string id, UserDto updatedUser)
+    {
+        if (!isDataTableInitialized) return;
+        await JS.InvokeVoidAsync("updateDataTableRow", "#myTable", id, updatedUser);
+    }
+
+    private async Task RemoveDataTableRow(string id)
+    {
+        if (!isDataTableInitialized) return;
+        await JS.InvokeVoidAsync("removeDataTableRow", "#myTable", id);
     }
 
     public async void Dispose()
     {
-        await JS.InvokeVoidAsync("destroyDataTable", "#myTable");
+        // Best Practice: Cleanup DataTable khi component dispose để tránh memory leak
+        if (isDataTableInitialized)
+        {
+            await JS.InvokeVoidAsync("destroyDataTable", "#myTable");
+            isDataTableInitialized = false;
+        }
     }
 }

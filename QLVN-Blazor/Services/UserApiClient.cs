@@ -6,10 +6,38 @@ namespace QLVN_Blazor.Services
     public class UserApiClient
     {
         private readonly HttpClient _httpClient;
-        public UserApiClient(HttpClient httpClient) => _httpClient = httpClient;
+        private readonly ILogger<UserApiClient> _logger; // Inject ILogger
+
+        public UserApiClient(HttpClient httpClient, ILogger<UserApiClient> logger)
+        {
+            _httpClient = httpClient;
+            _logger = logger;
+            _httpClient.Timeout = TimeSpan.FromSeconds(30); // Fix timeout nếu slow
+            _httpClient.BaseAddress = new Uri("https://localhost:5084/"); // Đảm bảo đúng API port
+        }
 
         public async Task<List<UserDto>> GetUserAllSync()
-            => await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User") ?? new();
+        {
+            try
+            {
+                _logger.LogInformation("Fetching users from API...");
+                var response = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User");
+                _logger.LogInformation("Users fetched successfully.");
+                return response ?? new();
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP error fetching users.");
+                return new();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error fetching users.");
+                return new();
+            }
+        }
+
+        
 
         public async Task<UserDto?> GetByIdAsync(string id)
             => await _httpClient.GetFromJsonAsync<UserDto>($"api/User/{id}");
