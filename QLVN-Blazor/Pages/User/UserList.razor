@@ -29,32 +29,34 @@ else
         <button class="btn btn-primary" @onclick="OpenAddModal">Thêm người dùng mới</button>
     </div>
 
-    <table id="myTable" class="display table table-striped table-hover" style="width:100%">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tên</th>
-                <th>Email</th>
-                <th>Điện thoại</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in allUsers)
-            {
-                <tr data-user-id="@user.Id">
-                    <td>@user.Id</td>
-                    <td>@user.Name</td>
-                    <td>@user.Email</td>
-                    <td>@user.Phone</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" @onclick="() => OpenEditModal(user.Id)">Sửa</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => OpenDeleteModal(user.Id)">Xóa</button>
-                    </td>
+    <div class="table-responsive">
+        <table id="myTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên</th>
+                    <th>Email</th>
+                    <th>Điện thoại</th>
+                    <th>Hành động</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var user in allUsers)
+                {
+                    <tr data-user-id="@user.Id">
+                        <td>@user.Id</td>
+                        <td>@user.Name</td>
+                        <td>@user.Email</td>
+                        <td>@user.Phone</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" @onclick="() => OpenEditModal(user.Id)">Sửa</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => OpenDeleteModal(user.Id)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 <!-- Modal Add/Edit User -->
@@ -148,97 +150,84 @@ else
     private UserDto? currentUser = new();
     private string? selectedUserId;
     private string selectedUserName = string.Empty;
-    private string password = string.Empty; // Chỉ cho Add
+    private string password = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        // Best Practice: Load data async không block UI, với try-catch để handle API errors
         try
         {
             await LoadData();
         }
         catch (Exception ex)
         {
-            // Notification fallback thay vì crash
             await NotificationService.ShowErrorAsync($"Lỗi tải dữ liệu: {ex.Message}");
         }
         finally
         {
             isLoading = false;
-            StateHasChanged(); // Trigger re-render nếu cần
+            StateHasChanged();
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Best Practice: Giống Home - Chỉ xử lý ở firstRender để tránh duplicate calls khi modal open/close
         if (firstRender)
         {
             try
             {
-                // 1. Delay nhỏ (500ms) để DOM ready, giống Home (tránh theme scripts conflict)
-                await Task.Delay(500);
+                await Task.Delay(500); // Delay để DOM ready
 
-                // Load scripts essentials cho UserList (light hơn Home: Chỉ DataTables + theme basics)
-                // Check existence trước load để tránh duplicate (từ adminAssetManager)
-                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables.js"); // DataTables core
-                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables_custom.js"); // Custom init
+                // Load scripts essentials
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables.js");
+                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables_custom.js");
 
-                // Reload theme scripts nhẹ (không cần analytic-dashboard vì không có charts)
+                // Theme basics
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
 
-                // 2. Hide loader sau scripts ready (sync với MainLayout/Home)
+                // Hide loader/customizer
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
-
-                // 3. Init DataTable chỉ sau khi DOM/scripts ready (tránh overlap với customizer)
-                if (allUsers?.Any() == true)
-                {
-                    await JS.InvokeVoidAsync("initDataTable", "#myTable");
-                    isDataTableInitialized = true;
-                }
-
-                // 4. Fallback hide customizer (chỉ ở UserList, tránh UI lỗi overlap)
                 await JS.InvokeVoidAsync("destroyCustomizer");
                 await JS.InvokeVoidAsync("eval",
                     "$('#pcoded-mCustomizer').addClass('d-none').hide(); " +
                     "$('.customizer-toggle').hide();");
 
-                // Re-init plugins (từ themeInterop.js) để modals/DataTables mượt
-                await JS.InvokeVoidAsync("initCustomPlugins");
-
-                Console.WriteLine("UserList scripts and UI initialized successfully.");
-            }
-            catch (Exception ex)
-            {
-                // Error handling giống Home: Log + fallback
-                Console.WriteLine($"UserList Script/UI Load Error: {ex.Message}");
-                // Fallback: Hide loader/customizer bằng CSS
-                await JS.InvokeVoidAsync("eval",
-                    "$('.theme-loader').hide(); " +
-                    "$('#pcoded-mCustomizer').hide();");
-                // Fallback init DataTable nếu data ready
-                if (allUsers?.Any() == true && !isDataTableInitialized)
+                // Init DataTable
+                if (allUsers?.Any() == true)
                 {
                     await JS.InvokeVoidAsync("initDataTable", "#myTable");
                     isDataTableInitialized = true;
+                    // Force re-draw để bật features (search/sort/pagination)
+                    await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
                 }
+
+                await JS.InvokeVoidAsync("initCustomPlugins");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Init Error: {ex.Message}");
+                await JS.InvokeVoidAsync("eval",
+                    "$('.theme-loader, #pcoded-mCustomizer').hide(); " +
+                    "$('#myTable').DataTable().draw(false);");
             }
         }
     }
 
     private async Task LoadData()
     {
-        // Best Practice: Async load từ API, với null-check
         allUsers = await UserService.GetUserAllSync();
-        StateHasChanged(); // Trigger re-render table body
+        StateHasChanged();
+        if (isDataTableInitialized)
+        {
+            await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
+        }
     }
 
     private void OpenAddModal()
     {
         isEditMode = false;
-        currentUser = new UserDto { RowStatus = 1 }; // Default active
+        currentUser = new UserDto { RowStatus = 1 };
         password = string.Empty;
         isModalOpen = true;
         selectedUserId = null;
@@ -301,7 +290,6 @@ else
             bool success = false;
             if (isAddMode)
             {
-                // Mapping DTO: Giả sử CreateUserRequest có fields tương ứng
                 var request = new CreateUserRequest
                 {
                     Name = currentUser.Name,
@@ -392,17 +380,18 @@ else
     {
         if (!isDataTableInitialized) return;
         await JS.InvokeVoidAsync("updateDataTableRow", "#myTable", id, updatedUser);
+        await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
     }
 
     private async Task RemoveDataTableRow(string id)
     {
         if (!isDataTableInitialized) return;
         await JS.InvokeVoidAsync("removeDataTableRow", "#myTable", id);
+        await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
     }
 
     public async void Dispose()
     {
-        // Best Practice: Cleanup DataTable khi component dispose để tránh memory leak
         if (isDataTableInitialized)
         {
             await JS.InvokeVoidAsync("destroyDataTable", "#myTable");

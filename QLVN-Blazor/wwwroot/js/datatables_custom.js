@@ -6,20 +6,33 @@ window.initDataTable = (selector, options = {}) => {
     }
 
     const defaultOptions = {
+        // Layout giống demo: length/filter top, info/pagination bottom
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/vi.json' // Tiếng Việt (tùy chọn)
+            url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/vi.json' // Labels tiếng Việt: "Tìm kiếm:", "Hiển thị X đến Y"
         },
         pageLength: 10,
-        lengthMenu: [5, 10, 25, 50, 100],
-        responsive: true,
-        order: [[0, 'desc']]
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tất cả"]], // Dropdown entries per page
+        searching: true, // Bật search box
+        ordering: true, // Bật sort arrows trên header
+        order: [[0, 'desc']], // Default sort ID desc
+        info: true, // Bật info "Hiển thị 1 đến 10 của X entries"
+        paging: true, // Bật pagination
+        pagingType: 'full_numbers', // Pagination với numbers 1 2 3 ... >
+        responsive: true, // Responsive columns
+        // Không thêm buttons để tránh bloat; extend nếu cần
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
 
-    const table = $(selector).DataTable(mergedOptions);
-    window.dataTableInstances[selector] = table;
-    return table;
+    try {
+        const table = $(selector).DataTable(mergedOptions);
+        window.dataTableInstances[selector] = table;
+        console.log('DataTable full features enabled: search, sort, pagination, info.');
+        return table;
+    } catch (error) {
+        console.error('Lỗi init DataTable:', error);
+    }
 };
 
 window.destroyDataTable = (selector) => {
@@ -34,22 +47,17 @@ window.reinitDataTable = (selector, options) => {
     return initDataTable(selector, options);
 };
 
-
-// Thêm hàm update row cụ thể bằng ID
 window.updateDataTableRow = (selector, userId, updatedUser) => {
     const table = window.dataTableInstances[selector];
     if (!table) return;
 
-    // Tìm row bằng data-user-id attribute (từ Razor)
     const row = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
     if (row.length === 0) return;
 
-    // Update cells (chỉ các cột data: ID không thay đổi, Name, Email, Phone)
-    row.find('td:nth-child(2)').text(updatedUser.name || ''); // Tên
-    row.find('td:nth-child(3)').text(updatedUser.email || ''); // Email
-    row.find('td:nth-child(4)').text(updatedUser.phone || ''); // Phone
+    row.find('td:nth-child(2)').text(updatedUser.name || '');
+    row.find('td:nth-child(3)').text(updatedUser.email || '');
+    row.find('td:nth-child(4)').text(updatedUser.phone || '');
 
-    // Cập nhật data cho row (để sort/search hoạt động đúng)
     const rowIndex = table.row(row).index();
     if (rowIndex !== null) {
         table.row(rowIndex).data([
@@ -57,14 +65,13 @@ window.updateDataTableRow = (selector, userId, updatedUser) => {
             updatedUser.name,
             updatedUser.email,
             updatedUser.phone,
-            row.find('td:last-child').html() // Giữ nguyên action buttons
+            row.find('td:last-child').html()
         ]);
     }
 
-    table.draw(false); // Redraw mà không reset paging
+    table.draw(false);
 };
 
-// Thêm hàm remove row cụ thể (cho delete)
 window.removeDataTableRow = (selector, userId) => {
     const table = window.dataTableInstances[selector];
     if (!table) return;
@@ -72,20 +79,5 @@ window.removeDataTableRow = (selector, userId) => {
     const row = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
     if (row.length === 0) return;
 
-    table.row(row).remove().draw(false); // Remove và redraw không reset
-};
-
-// Thêm hàm add row mới (cho create, nhưng vì create reload full, có thể optional)
-window.addDataTableRow = (selector, newUser) => {
-    const table = window.dataTableInstances[selector];
-    if (!table) return;
-
-    const newRowData = [
-        newUser.id,
-        newUser.name,
-        newUser.email,
-        newUser.phone,
-        '<button class="btn btn-sm btn-warning" onclick="editUser(\'' + newUser.id + '\')">Sửa</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(\'' + newUser.id + '\')">Xóa</button>'
-    ];
-    table.row.add(newRowData).draw(false);
+    table.row(row).remove().draw(false);
 };
