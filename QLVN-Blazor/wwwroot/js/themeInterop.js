@@ -19,8 +19,8 @@
             navbar.setAttribute('pcoded-navbar-position', 'absolute');
             navbar.style.position = 'absolute';
 
-            inner.style.overflowY = 'hidden';
-            inner.style.height = 'auto';
+            //inner.style.overflowY = 'auto';
+            //inner.style.height = 'auto';
         }
     },
 

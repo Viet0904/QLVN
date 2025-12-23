@@ -498,13 +498,16 @@
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/serial.js");
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/light.js");
 
+
+                // await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+
                 // Load the Dashboard Logic
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/analytic-dashboard.min.js");
 
                 // load lại các js
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
-                // await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
 
 
                 // 2. GỌI HÀM TẮT LOADER
