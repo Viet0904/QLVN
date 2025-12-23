@@ -1,7 +1,10 @@
-﻿namespace QLVN_Contracts.Dtos.User
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace QLVN_Contracts.Dtos.User
 {
     public class UserDto
     {
+        [Required]
         public string Id { get; set; }
         public string Name { get; set; }
         public string UserName { get; set; }
