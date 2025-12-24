@@ -1,353 +1,25 @@
 ﻿window.dataTableInstances = {};
 window.selectedUserRows = {};
+window.blazorInstance = null;
 
-window.initDataTable = function (selector) {
-    if ($.fn.DataTable.isDataTable(selector)) {
-        $(selector).DataTable().destroy();
-    }
-
-    var viewportHeight = $(window).height();
-    var scrollHeight = Math.max(200, Math.min(500, viewportHeight * 0.5));
-
-    const table = $(selector).DataTable({
-        responsive: true,
-        searching: true,
-        ordering: true,
-        info: true,
-        paging: true,
-        scrollY: scrollHeight + 'px',
-        scrollX: true,
-        scrollCollapse: true,
-
-        select: {
-            style: 'multi',
-            selector: 'td:not(:last-child)',
-            info: false
-        },
-
-        pageLength: 10,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tất cả"]],
-        pagingType: "full_numbers",
-        order: [[0, "asc"]],
-
-        layout: {
-            topStart: 'pageLength',
-            topEnd: 'search',
-            bottomStart: 'info',
-            bottomEnd: 'paging'
-        },
-
-        language: {
-            lengthMenu: "Hiển thị _MENU_ bản ghi",
-            zeroRecords: "Không tìm thấy dữ liệu phù hợp",
-            info: "Hiển thị từ _START_ đến _END_ trong _TOTAL_ bản ghi",
-            infoEmpty: "Hiển thị từ 0 đến 0 trong 0 bản ghi",
-            infoFiltered: "(được lọc từ _MAX_ bản ghi)",
-            search: "Tìm kiếm:",
-            searchPlaceholder: "Nhập từ khóa...",
-            paginate: {
-                first: '«',
-                last: '»',
-                next: '›',
-                previous: '‹'
-            }
-        },
-
-        columnDefs: [
-            { orderable: false, targets: -1 }
-        ],
-
-        initComplete: function () {
-            var api = this.api();
-            var totalColumns = api.columns().nodes().length;
-
-            api.columns().every(function (index) {
-                var column = this;
-                var header = $(column.header());
-
-                if (index === totalColumns - 1) return;
-                if (header.find('.dt-column-menu').length > 0) return;
-
-                var menuBtn = $('<span class="dt-column-menu" title="Menu"><i class="feather icon-menu"></i></span>');
-
-                var dropdown = $(`
-                    <div class="dt-column-dropdown">
-                        <div class="dt-dropdown-item dt-sort-asc">
-                            <i class="feather icon-arrow-up"></i>
-                            <span>Sort Ascending</span>
-                        </div>
-                        <div class="dt-dropdown-item dt-sort-desc">
-                            <i class="feather icon-arrow-down"></i>
-                            <span>Sort Descending</span>
-                        </div>
-                        <div class="dt-dropdown-divider"></div>
-                        <div class="dt-dropdown-section">
-                            <label class="dt-dropdown-label">Filter Type</label>
-                            <select class="dt-filter-type">
-                                <option value="contains">Contains</option>
-                                <option value="equals">Equals</option>
-                                <option value="starts">Starts with</option>
-                                <option value="ends">Ends with</option>
-                            </select>
-                        </div>
-                        <div class="dt-dropdown-filter">
-                            <input type="text" class="dt-filter-input" placeholder="Filter value...">
-                        </div>
-                        <div class="dt-dropdown-item dt-clear-filter">
-                            <i class="feather icon-x-circle"></i>
-                            <span>Clear Filter</span>
-                        </div>
-                    </div>
-                `);
-
-                header.append(menuBtn);
-                $('body').append(dropdown);
-
-                // Flag để ngăn dropdown đóng khi đang filter
-                var isFiltering = false;
-
-                function applyFilter(closeDropdown) {
-                    var filterType = dropdown.find('.dt-filter-type').val();
-                    var filterValue = dropdown.find('.dt-filter-input').val();
-
-                    isFiltering = true;
-
-                    if (!filterValue) {
-                        if (column.search() !== '') {
-                            column.search('').draw();
-                        }
-                    } else {
-                        var regex = '';
-                        switch (filterType) {
-                            case 'equals':
-                                regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue) + '$';
-                                break;
-                            case 'starts':
-                                regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue);
-                                break;
-                            case 'ends':
-                                regex = $.fn.dataTable.util.escapeRegex(filterValue) + '$';
-                                break;
-                            case 'contains':
-                            default:
-                                regex = $.fn.dataTable.util.escapeRegex(filterValue);
-                                break;
-                        }
-                        column.search(regex, true, false).draw();
-                    }
-
-                    // Giữ dropdown mở và focus lại input
-                    setTimeout(function () {
-                        isFiltering = false;
-                        if (!closeDropdown) {
-                            dropdown.addClass('show');
-                            dropdown.find('.dt-filter-input').focus();
-                        }
-                    }, 10);
-
-                    if (closeDropdown) {
-                        dropdown.removeClass('show');
-                    }
-                }
-
-                function positionDropdown() {
-                    var btnOffset = menuBtn.offset();
-                    var btnHeight = menuBtn.outerHeight();
-                    var dropdownWidth = dropdown.outerWidth();
-                    var left = btnOffset.left - dropdownWidth + menuBtn.outerWidth();
-
-                    dropdown.css({
-                        top: btnOffset.top + btnHeight + 5,
-                        left: left
-                    });
-
-                    if (dropdown.offset().left < 10) {
-                        dropdown.css('left', 10);
-                    }
-
-                    var dropdownRight = dropdown.offset().left + dropdownWidth;
-                    var windowWidth = $(window).width();
-                    if (dropdownRight > windowWidth - 10) {
-                        dropdown.css('left', windowWidth - dropdownWidth - 10);
-                    }
-
-                    var dropdownBottom = dropdown.offset().top + dropdown.outerHeight();
-                    var windowHeight = $(window).height() + $(window).scrollTop();
-                    if (dropdownBottom > windowHeight) {
-                        dropdown.css('top', btnOffset.top - dropdown.outerHeight() - 5);
-                    }
-                }
-
-                menuBtn.on('click', function (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    $('.dt-column-dropdown').not(dropdown).removeClass('show');
-                    dropdown.toggleClass('show');
-
-                    if (dropdown.hasClass('show')) {
-                        positionDropdown();
-                    }
-                });
-
-                dropdown.find('.dt-sort-asc').on('click', function (e) {
-                    e.stopPropagation();
-                    column.order('asc').draw();
-                    dropdown.removeClass('show');
-                });
-
-                dropdown.find('.dt-sort-desc').on('click', function (e) {
-                    e.stopPropagation();
-                    column.order('desc').draw();
-                    dropdown.removeClass('show');
-                });
-
-                // Ngăn tất cả click trong dropdown đóng menu
-                dropdown.on('click mousedown', function (e) {
-                    e.stopPropagation();
-                });
-
-                // Filter type change
-                dropdown.find('.dt-filter-type').on('change', function (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var filterValue = dropdown.find('.dt-filter-input').val();
-                    if (filterValue) {
-                        applyFilter(false);
-                    }
-                });
-
-                // Filter input - realtime với debounce
-                var filterTimeout;
-                dropdown.find('.dt-filter-input').on('input', function (e) {
-                    e.stopPropagation();
-                    clearTimeout(filterTimeout);
-                    filterTimeout = setTimeout(function () {
-                        applyFilter(false);
-                    }, 400);
-                });
-
-                // Enter để đóng dropdown
-                dropdown.find('.dt-filter-input').on('keydown', function (e) {
-                    e.stopPropagation();
-                    if (e.key === 'Enter' || e.keyCode === 13) {
-                        e.preventDefault();
-                        clearTimeout(filterTimeout);
-                        applyFilter(true);
-                    }
-                });
-
-                // Ngăn các event khác
-                dropdown.find('.dt-filter-input, .dt-filter-type').on('click focus mousedown mouseup', function (e) {
-                    e.stopPropagation();
-                });
-
-                dropdown.find('.dt-clear-filter').on('click', function (e) {
-                    e.stopPropagation();
-                    dropdown.find('.dt-filter-input').val('');
-                    dropdown.find('.dt-filter-type').val('contains');
-                    column.search('').draw();
-                    dropdown.removeClass('show');
-                });
-
-                // Lưu reference để check khi close
-                dropdown.data('isFiltering', function () { return isFiltering; });
-            });
-
-            $(document).on('click.dtMenu', function (e) {
-                if (!$(e.target).closest('.dt-column-menu, .dt-column-dropdown').length) {
-                    // Kiểm tra không đang filter
-                    var shouldClose = true;
-                    $('.dt-column-dropdown.show').each(function () {
-                        var checkFiltering = $(this).data('isFiltering');
-                        if (checkFiltering && checkFiltering()) {
-                            shouldClose = false;
-                        }
-                    });
-                    if (shouldClose) {
-                        $('.dt-column-dropdown').removeClass('show');
-                    }
-                }
-            });
-
-            $(window).on('scroll.dtMenu resize.dtMenu', function () {
-                $('.dt-column-dropdown').removeClass('show');
-            });
-
-            $('.dt-scroll-body').on('scroll', function () {
-                $('.dt-column-dropdown').removeClass('show');
-            });
-        }
-    });
-
-    window.dataTableInstances[selector] = table;
-    window.selectedUserRows[selector] = [];
-
-    table.on('select deselect', function (e, dt, type, indexes) {
-        if (type === 'row') {
-            const selectedRows = table.rows({ selected: true }).data();
-            window.selectedUserRows[selector] = [];
-            selectedRows.each(function (rowData, index) {
-                const rowNode = table.row(index).node();
-                const userId = $(rowNode).data('user-id');
-                if (userId) window.selectedUserRows[selector].push(userId);
-            });
-        }
-    });
-
-    $(window).on('resize.dtResize', function () {
-        if (window.dataTableInstances[selector]) {
-            window.dataTableInstances[selector].columns.adjust();
-        }
-    });
-    // Bind action events cho tất cả rows sau khi DataTable init xong
-    table.on('draw', function () {
-        window.bindAllRowEvents(selector);
-    });
-
-    // Bind lần đầu
-    window.bindAllRowEvents(selector);
-
-
-};
-
-window.destroyDataTable = function (selector) {
-    if (window.dataTableInstances[selector]) {
-        $(document).off('click.dtMenu');
-        $(window).off('scroll.dtMenu resize.dtMenu resize.dtResize');
-        $('.dt-column-dropdown').remove();
-        window.dataTableInstances[selector].destroy();
-        delete window.dataTableInstances[selector];
-        delete window.selectedUserRows[selector];
-    }
-};
-
-window.reinitDataTable = function (selector) {
-    window.destroyDataTable(selector);
-    window.initDataTable(selector);
-};
-
-window.getSelectedUserIds = function (selector) {
-    return window.selectedUserRows[selector] || [];
-};
-
-window.clearTableSelection = function (selector) {
-    if (window.dataTableInstances[selector]) {
-        window.dataTableInstances[selector].rows().deselect();
-        window.selectedUserRows[selector] = [];
-    }
+// Register Blazor instance
+window.registerBlazorInstance = function (instance) {
+    window.blazorInstance = instance;
+    console.log('✅ Blazor instance registered');
 };
 
 // ==========================================
-// USER DATA TABLE WITH CUSTOM COLUMN VISIBILITY
+// USER DATA TABLE - FULL FEATURES
 // ==========================================
-
 window.initUserDataTable = function (selector) {
+    console.log('🚀 Initializing UserDataTable:', selector);
+
     if ($.fn.DataTable.isDataTable(selector)) {
+        console.log('⚠️ Destroying existing DataTable');
         $(selector).DataTable().destroy();
     }
 
-    // Xóa các element cũ nếu có
+    // Clean up old elements
     $('.dt-column-dropdown').remove();
     $('.colvis-dropdown-custom').remove();
     $('.dt-custom-toolbar').remove();
@@ -355,7 +27,6 @@ window.initUserDataTable = function (selector) {
     var viewportHeight = $(window).height();
     var scrollHeight = Math.max(200, Math.min(500, viewportHeight * 0.5));
 
-    // Định nghĩa tên cột
     var columnNames = [
         'Id', 'Nhóm', 'Tên', 'Giới tính', 'Tên đăng nhập',
         'Email', 'Điện thoại', 'CMND/CCCD', 'Địa chỉ', 'Hình ảnh',
@@ -363,19 +34,19 @@ window.initUserDataTable = function (selector) {
         'Hành động'
     ];
 
-    // Cột mặc định ẩn
     var defaultHiddenColumns = [3, 7, 8, 9, 10, 13, 14, 15];
 
     const table = $(selector).DataTable({
         responsive: false,
-        searching: true,
+        searching: false,
         ordering: true,
-        info: true,
-        paging: true,
+        info: false,
+        paging: false,
         lengthChange: false,
         scrollY: scrollHeight + 'px',
         scrollX: true,
         scrollCollapse: true,
+        autoWidth: false,
 
         select: {
             style: 'multi',
@@ -390,15 +61,12 @@ window.initUserDataTable = function (selector) {
         layout: {
             topStart: null,
             topEnd: null,
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            bottomStart: null,
+            bottomEnd: null
         },
 
         language: {
             zeroRecords: "Không tìm thấy dữ liệu phù hợp",
-            info: "Hiển thị từ _START_ đến _END_ trong _TOTAL_ bản ghi",
-            infoEmpty: "Hiển thị từ 0 đến 0 trong 0 bản ghi",
-            infoFiltered: "(được lọc từ _MAX_ bản ghi)",
             paginate: {
                 first: '«',
                 last: '»',
@@ -409,18 +77,31 @@ window.initUserDataTable = function (selector) {
 
         columnDefs: [
             { orderable: false, targets: -1 },
-            { visible: false, targets: defaultHiddenColumns }
+            { visible: false, targets: defaultHiddenColumns },
+            { width: '80px', targets: 0 },
+            { width: '120px', targets: -1 }
         ],
 
+        drawCallback: function (settings) {
+            console.log('📊 DataTable drawn');
+            // Re-bind events after draw
+            bindAllRowEvents(selector);
+        },
+
         initComplete: function () {
+            console.log('✅ DataTable initialized');
             var api = this.api();
             var wrapper = $(api.table().container());
             var totalColumns = api.columns().nodes().length;
 
-            // Tạo custom toolbar
+            // Create custom toolbar
             createCustomToolbar(api, wrapper, columnNames, totalColumns);
 
-            // Tạo menu dropdown cho mỗi cột
+            // Restore page size
+            var savedPageSize = localStorage.getItem('userTablePageSize') || '10';
+            wrapper.find('.dt-page-length').val(savedPageSize);
+
+            // Column menus
             api.columns().every(function (index) {
                 var column = this;
                 var header = $(column.header());
@@ -428,531 +109,137 @@ window.initUserDataTable = function (selector) {
                 if (index === totalColumns - 1) return;
                 if (header.find('.dt-column-menu').length > 0) return;
 
-                var menuBtn = $('<span class="dt-column-menu" title="Menu"><i class="feather icon-menu"></i></span>');
-
-                var dropdown = $(`
-                    <div class="dt-column-dropdown">
-                        <div class="dt-dropdown-item dt-sort-asc">
-                            <i class="feather icon-arrow-up"></i>
-                            <span>Sắp xếp tăng dần</span>
-                        </div>
-                        <div class="dt-dropdown-item dt-sort-desc">
-                            <i class="feather icon-arrow-down"></i>
-                            <span>Sắp xếp giảm dần</span>
-                        </div>
-                        <div class="dt-dropdown-divider"></div>
-                        <div class="dt-dropdown-item dt-hide-column">
-                            <i class="feather icon-eye-off"></i>
-                            <span>Ẩn cột này</span>
-                        </div>
-                        <div class="dt-dropdown-divider"></div>
-                        <div class="dt-dropdown-section">
-                            <label class="dt-dropdown-label">Kiểu lọc</label>
-                            <select class="dt-filter-type">
-                                <option value="contains">Chứa</option>
-                                <option value="equals">Bằng</option>
-                                <option value="starts">Bắt đầu với</option>
-                                <option value="ends">Kết thúc với</option>
-                            </select>
-                        </div>
-                        <div class="dt-dropdown-filter">
-                            <input type="text" class="dt-filter-input" placeholder="Nhập giá trị lọc...">
-                        </div>
-                        <div class="dt-dropdown-item dt-clear-filter">
-                            <i class="feather icon-x-circle"></i>
-                            <span>Xóa bộ lọc</span>
-                        </div>
-                    </div>
-                `);
-
-                header.append(menuBtn);
-                $('body').append(dropdown);
-
-                // Flag để ngăn dropdown đóng khi đang filter
-                var isFiltering = false;
-
-                function applyFilter(closeDropdown) {
-                    var filterType = dropdown.find('.dt-filter-type').val();
-                    var filterValue = dropdown.find('.dt-filter-input').val();
-
-                    isFiltering = true;
-
-                    if (!filterValue) {
-                        if (column.search() !== '') {
-                            column.search('').draw();
-                        }
-                    } else {
-                        var regex = '';
-                        switch (filterType) {
-                            case 'equals':
-                                regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue) + '$';
-                                break;
-                            case 'starts':
-                                regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue);
-                                break;
-                            case 'ends':
-                                regex = $.fn.dataTable.util.escapeRegex(filterValue) + '$';
-                                break;
-                            case 'contains':
-                            default:
-                                regex = $.fn.dataTable.util.escapeRegex(filterValue);
-                                break;
-                        }
-                        column.search(regex, true, false).draw();
-                    }
-
-                    // Giữ dropdown mở và focus lại input
-                    setTimeout(function () {
-                        isFiltering = false;
-                        if (!closeDropdown) {
-                            dropdown.addClass('show');
-                            dropdown.find('.dt-filter-input').focus();
-                        }
-                    }, 10);
-
-                    if (closeDropdown) {
-                        dropdown.removeClass('show');
-                    }
-                }
-
-                function positionDropdown() {
-                    var btnOffset = menuBtn.offset();
-                    var btnHeight = menuBtn.outerHeight();
-                    var dropdownWidth = dropdown.outerWidth();
-                    var left = btnOffset.left - dropdownWidth + menuBtn.outerWidth();
-
-                    dropdown.css({
-                        top: btnOffset.top + btnHeight + 5,
-                        left: left
-                    });
-
-                    if (dropdown.offset().left < 10) {
-                        dropdown.css('left', 10);
-                    }
-
-                    var dropdownRight = dropdown.offset().left + dropdownWidth;
-                    var windowWidth = $(window).width();
-                    if (dropdownRight > windowWidth - 10) {
-                        dropdown.css('left', windowWidth - dropdownWidth - 10);
-                    }
-
-                    var dropdownBottom = dropdown.offset().top + dropdown.outerHeight();
-                    var windowHeight = $(window).height() + $(window).scrollTop();
-                    if (dropdownBottom > windowHeight) {
-                        dropdown.css('top', btnOffset.top - dropdown.outerHeight() - 5);
-                    }
-                }
-
-                menuBtn.on('click', function (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    $('.dt-column-dropdown').not(dropdown).removeClass('show');
-                    $('.colvis-dropdown-custom').removeClass('show');
-                    dropdown.toggleClass('show');
-                    if (dropdown.hasClass('show')) {
-                        positionDropdown();
-                    }
-                });
-
-                dropdown.find('.dt-sort-asc').on('click', function (e) {
-                    e.stopPropagation();
-                    column.order('asc').draw();
-                    dropdown.removeClass('show');
-                });
-
-                dropdown.find('.dt-sort-desc').on('click', function (e) {
-                    e.stopPropagation();
-                    column.order('desc').draw();
-                    dropdown.removeClass('show');
-                });
-
-                dropdown.find('.dt-hide-column').on('click', function (e) {
-                    e.stopPropagation();
-                    column.visible(false);
-                    dropdown.removeClass('show');
-                    updateColumnVisibilityDropdown(api);
-                });
-
-                // Ngăn tất cả click trong dropdown đóng menu
-                dropdown.on('click mousedown', function (e) {
-                    e.stopPropagation();
-                });
-
-                // Filter type change
-                dropdown.find('.dt-filter-type').on('change', function (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    var filterValue = dropdown.find('.dt-filter-input').val();
-                    if (filterValue) {
-                        applyFilter(false);
-                    }
-                });
-
-                // Filter input - realtime với debounce
-                var filterTimeout;
-                dropdown.find('.dt-filter-input').on('input', function (e) {
-                    e.stopPropagation();
-                    clearTimeout(filterTimeout);
-                    filterTimeout = setTimeout(function () {
-                        applyFilter(false);
-                    }, 400);
-                });
-
-                // Enter để đóng dropdown
-                dropdown.find('.dt-filter-input').on('keydown', function (e) {
-                    e.stopPropagation();
-                    if (e.key === 'Enter' || e.keyCode === 13) {
-                        e.preventDefault();
-                        clearTimeout(filterTimeout);
-                        applyFilter(true);
-                    }
-                });
-
-                // Ngăn các event khác
-                dropdown.find('.dt-filter-input, .dt-filter-type').on('click focus mousedown mouseup', function (e) {
-                    e.stopPropagation();
-                });
-
-                dropdown.find('.dt-clear-filter').on('click', function (e) {
-                    e.stopPropagation();
-                    dropdown.find('.dt-filter-input').val('');
-                    dropdown.find('.dt-filter-type').val('contains');
-                    column.search('').draw();
-                    dropdown.removeClass('show');
-                });
-
-                // Lưu reference để check khi close
-                dropdown.data('isFiltering', function () { return isFiltering; });
+                createColumnMenu(column, header, index);
             });
+
+            // Bind row events
+            bindAllRowEvents(selector);
 
             // Close dropdowns on outside click
-            $(document).on('click.dtUserMenu', function (e) {
+            $(document).off('click.dtUserMenu').on('click.dtUserMenu', function (e) {
                 if (!$(e.target).closest('.dt-column-menu, .dt-column-dropdown, .colvis-btn-custom, .colvis-dropdown-custom').length) {
-                    // Kiểm tra không đang filter
-                    var shouldClose = true;
-                    $('.dt-column-dropdown.show').each(function () {
-                        var checkFiltering = $(this).data('isFiltering');
-                        if (checkFiltering && checkFiltering()) {
-                            shouldClose = false;
-                        }
-                    });
-                    if (shouldClose) {
-                        $('.dt-column-dropdown').removeClass('show');
-                        $('.colvis-dropdown-custom').removeClass('show');
-                    }
+                    $('.dt-column-dropdown').removeClass('show');
+                    $('.colvis-dropdown-custom').removeClass('show');
                 }
             });
 
-            $(window).on('scroll.dtUserMenu resize.dtUserMenu', function () {
+            $(window).off('scroll.dtUserMenu resize.dtUserMenu').on('scroll.dtUserMenu resize.dtUserMenu', function () {
                 $('.dt-column-dropdown').removeClass('show');
                 $('.colvis-dropdown-custom').removeClass('show');
             });
-
-            $('.dt-scroll-body').on('scroll', function () {
-                $('.dt-column-dropdown').removeClass('show');
-            });
         }
     });
 
+    // Store instance
     window.dataTableInstances[selector] = table;
     window.selectedUserRows[selector] = [];
 
+    // Selection events
     table.on('select deselect', function (e, dt, type, indexes) {
         if (type === 'row') {
-            const selectedRows = table.rows({ selected: true }).data();
+            const selectedRows = table.rows({ selected: true }).nodes();
             window.selectedUserRows[selector] = [];
-            selectedRows.each(function (rowData, index) {
-                const rowNode = table.row(index).node();
-                const userId = $(rowNode).data('user-id');
-                if (userId) window.selectedUserRows[selector].push(userId);
+
+            $(selectedRows).each(function () {
+                const userId = $(this).data('user-id');
+                if (userId) {
+                    window.selectedUserRows[selector].push(userId);
+                }
             });
+
+            console.log('✅ Selected rows:', window.selectedUserRows[selector]);
         }
     });
 
-    $(window).on('resize.dtUserResize', function () {
+    // Window resize
+    $(window).off('resize.dtUserResize').on('resize.dtUserResize', function () {
         if (window.dataTableInstances[selector]) {
             window.dataTableInstances[selector].columns.adjust();
         }
     });
 
-    console.log('User DataTable with Column Visibility initialized:', selector);
+    console.log('✅ UserDataTable initialized successfully');
 };
 
-// Tạo custom toolbar với layout đẹp - CÓ NÚT THÊM MỚI
+// ==========================================
+// CREATE CUSTOM TOOLBAR
+// ==========================================
 function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
     var toolbarHtml = `
-        <div class="dt-custom-toolbar">
-            <div class="dt-toolbar-left">
-                <div class="colvis-wrapper">
-                    <button type="button" class="btn btn-secondary btn-sm colvis-btn-custom">
-                        <i class="feather icon-columns"></i> Cột Hiển Thị
-                        <i class="feather icon-chevron-down ms-1"></i>
+        <div class="dt-custom-toolbar" style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        ">
+            <div class="dt-toolbar-left" style="display: flex; gap: 15px; align-items: center;">
+                <div class="colvis-wrapper" style="position: relative;">
+                    <button type="button" class="btn btn-secondary btn-sm colvis-btn-custom" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    ">
+                        <i class="feather icon-columns"></i>
+                        <span>Cột Hiển Thị</span>
+                        <i class="feather icon-chevron-down" style="font-size: 12px;"></i>
                     </button>
-                    <div class="colvis-dropdown-custom">
-                        <div class="colvis-item colvis-show-all">
+                    <div class="colvis-dropdown-custom" style="
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        margin-top: 5px;
+                        background: white;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 9999;
+                        min-width: 220px;
+                        max-height: 400px;
+                        overflow-y: auto;
+                        display: none;
+                    ">
+                        <div class="colvis-item colvis-show-all" style="
+                            padding: 12px 16px;
+                            cursor: pointer;
+                            border-bottom: 1px solid #eee;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            font-weight: 600;
+                            color: #4680ff;
+                        ">
                             <i class="feather icon-eye"></i>
                             <span>Hiện tất cả</span>
                         </div>
-                        <div class="colvis-divider"></div>
                         <div class="colvis-columns-list"></div>
                     </div>
                 </div>
-                <div class="dt-length-wrapper">
-                    <select class="form-select form-select-sm dt-page-length">
+                <div class="dt-length-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                    <select class="form-select form-select-sm dt-page-length" style="width: auto;">
                         <option value="10">10</option>
                         <option value="25">25</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
-                        <option value="-1">Tất cả</option>
                     </select>
-                    <span>bản ghi</span>
+                    <span style="font-size: 14px; color: #666;">bản ghi</span>
                 </div>
             </div>
-            <div class="dt-toolbar-right">
-                <div class="dt-search-wrapper">
-                    <label>Tìm kiếm:</label>
-                    <input type="search" class="form-control form-control-sm dt-custom-search" placeholder="Nhập từ khóa...">
+            <div class="dt-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
+                <div class="dt-search-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                    <label style="margin: 0; font-size: 14px; color: #666;">Tìm kiếm:</label>
+                    <input type="search" class="form-control form-control-sm dt-custom-search" 
+                        placeholder="Nhập từ khóa..." style="width: 250px;">
                 </div>
-                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser">
-                    <i class="feather icon-plus"></i> Thêm Mới
-                </button>
-            </div>
-        </div>
-    `;
-
-    // Chèn toolbar vào đầu wrapper
-    wrapper.prepend(toolbarHtml);
-
-    // Tạo danh sách các cột cho column visibility
-    var columnsList = wrapper.find('.colvis-columns-list');
-    for (var i = 0; i < totalColumns - 1; i++) {
-        var isVisible = api.column(i).visible();
-        var itemHtml = `
-            <div class="colvis-item colvis-column-toggle" data-column="${i}">
-                <span class="colvis-check">${isVisible ? '✓' : ''}</span>
-                <span class="colvis-name">${columnNames[i]}</span>
-            </div>
-        `;
-        columnsList.append(itemHtml);
-    }
-
-    // Toggle column visibility dropdown
-    wrapper.find('.colvis-btn-custom').on('click', function (e) {
-        e.stopPropagation();
-        $('.dt-column-dropdown').removeClass('show');
-        wrapper.find('.colvis-dropdown-custom').toggleClass('show');
-    });
-
-    // Toggle visibility cho từng cột
-    wrapper.find('.colvis-column-toggle').on('click', function (e) {
-        e.stopPropagation();
-        var colIdx = $(this).data('column');
-        var column = api.column(colIdx);
-        var currentVisibility = column.visible();
-        column.visible(!currentVisibility);
-
-        $(this).find('.colvis-check').text(!currentVisibility ? '✓' : '');
-    });
-
-    // Hiện tất cả cột
-    wrapper.find('.colvis-show-all').on('click', function (e) {
-        e.stopPropagation();
-        for (var i = 0; i < totalColumns - 1; i++) {
-            api.column(i).visible(true);
-        }
-        wrapper.find('.colvis-column-toggle .colvis-check').text('✓');
-    });
-
-    // Page length change
-    wrapper.find('.dt-page-length').on('change', function () {
-        var val = $(this).val();
-        api.page.len(parseInt(val)).draw();
-    });
-
-    // Custom search
-    wrapper.find('.dt-custom-search').on('keyup', function () {
-        api.search(this.value).draw();
-    });
-}
-
-// Cập nhật dropdown khi visibility thay đổi
-function updateColumnVisibilityDropdown(api) {
-    var wrapper = $(api.table().container());
-    wrapper.find('.colvis-column-toggle').each(function () {
-        var colIdx = $(this).data('column');
-        var isVisible = api.column(colIdx).visible();
-        $(this).find('.colvis-check').text(isVisible ? '✓' : '');
-    });
-}
-
-window.destroyUserDataTable = function (selector) {
-    if (window.dataTableInstances[selector]) {
-        $(document).off('click.dtUserMenu');
-        $(window).off('scroll.dtUserMenu resize.dtUserMenu resize.dtUserResize');
-        $('.dt-column-dropdown').remove();
-        $('.colvis-dropdown-custom').remove();
-        $('.dt-custom-toolbar').remove();
-        window.dataTableInstances[selector].destroy();
-        delete window.dataTableInstances[selector];
-        delete window.selectedUserRows[selector];
-    }
-};
-
-window.reinitUserDataTable = function (selector) {
-    window.destroyUserDataTable(selector);
-    window.initUserDataTable(selector);
-};
-
-
-
-
-
-
-// ==========================================
-// ROW MANIPULATION FUNCTIONS
-// ==========================================
-window.addUserRow = function (selector, rowHtml) {
-    if (window.dataTableInstances[selector]) {
-        var table = window.dataTableInstances[selector];
-
-        // Tạo row mới từ HTML
-        var tempDiv = document.createElement('div');
-        tempDiv.innerHTML = '<table><tbody><tr>' + rowHtml + '</tr></tbody></table>';
-        var newRowData = [];
-        var cells = tempDiv.querySelectorAll('td');
-        cells.forEach(function (cell) {
-            newRowData.push(cell.innerHTML);
-        });
-
-        // Thêm row vào DataTable
-        var newRow = table.row.add(newRowData).draw(false);
-
-        // Lấy node và set data-user-id
-        var rowNode = newRow.node();
-        var userId = cells[0].textContent; // Id nằm ở cột đầu tiên
-        $(rowNode).attr('data-user-id', userId);
-        $(rowNode).attr('id', 'user-row-' + userId);
-
-        // Highlight row mới
-        $(rowNode).addClass('row-highlight-new');
-        setTimeout(function () {
-            $(rowNode).removeClass('row-highlight-new');
-        }, 2000);
-
-        console.log('Added new row for user:', userId);
-    }
-};
-
-window.updateUserRow = function (selector, userId, rowHtml) {
-    if (window.dataTableInstances[selector]) {
-        var table = window.dataTableInstances[selector];
-
-        // Tìm row theo data-user-id
-        var rowNode = $('tr[data-user-id="' + userId + '"]');
-
-        if (rowNode.length > 0) {
-            // Lấy DataTable row object
-            var row = table.row(rowNode);
-
-            // Parse HTML mới
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = '<table><tbody><tr>' + rowHtml + '</tr></tbody></table>';
-            var newRowData = [];
-            var cells = tempDiv.querySelectorAll('td');
-            cells.forEach(function (cell) {
-                newRowData.push(cell.innerHTML);
-            });
-
-            // Cập nhật dữ liệu row
-            row.data(newRowData).draw(false);
-
-            // Lấy lại node sau khi update và set lại attributes
-            var updatedNode = row.node();
-            $(updatedNode).attr('data-user-id', userId);
-            $(updatedNode).attr('id', 'user-row-' + userId);
-
-            // Highlight row đã update
-            $(updatedNode).addClass('row-highlight-update');
-            setTimeout(function () {
-                $(updatedNode).removeClass('row-highlight-update');
-            }, 2000);
-
-            console.log('Updated row for user:', userId);
-        } else {
-            console.warn('Row not found for user:', userId);
-        }
-    }
-};
-
-window.removeUserRow = function (selector, userId) {
-    if (window.dataTableInstances[selector]) {
-        var table = window.dataTableInstances[selector];
-
-        // Tìm row theo data-user-id
-        var rowNode = $('tr[data-user-id="' + userId + '"]');
-
-        if (rowNode.length > 0) {
-            // Thêm animation trước khi xóa
-            $(rowNode).addClass('row-highlight-delete');
-
-            setTimeout(function () {
-                // Xóa row khỏi DataTable
-                table.row(rowNode).remove().draw(false);
-                console.log('Removed row for user:', userId);
-            }, 300);
-        } else {
-            console.warn('Row not found for user:', userId);
-        }
-    }
-};
-
-
-
-// Thêm vào đầu file, sau các biến global
-window.blazorInstance = null;
-
-window.registerBlazorInstance = function (instance) {
-    window.blazorInstance = instance;
-    console.log('Blazor instance registered');
-};
-
-// Sửa function createCustomToolbar - thêm event cho nút Thêm Mới
-function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
-    var toolbarHtml = `
-        <div class="dt-custom-toolbar">
-            <div class="dt-toolbar-left">
-                <div class="colvis-wrapper">
-                    <button type="button" class="btn btn-secondary btn-sm colvis-btn-custom">
-                        <i class="feather icon-columns"></i> Cột Hiển Thị
-                        <i class="feather icon-chevron-down ms-1"></i>
-                    </button>
-                    <div class="colvis-dropdown-custom">
-                        <div class="colvis-item colvis-show-all">
-                            <i class="feather icon-eye"></i>
-                            <span>Hiện tất cả</span>
-                        </div>
-                        <div class="colvis-divider"></div>
-                        <div class="colvis-columns-list"></div>
-                    </div>
-                </div>
-                <div class="dt-length-wrapper">
-                    <select class="form-select form-select-sm dt-page-length">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                        <option value="-1">Tất cả</option>
-                    </select>
-                    <span>bản ghi</span>
-                </div>
-            </div>
-            <div class="dt-toolbar-right">
-                <div class="dt-search-wrapper">
-                    <label>Tìm kiếm:</label>
-                    <input type="search" class="form-control form-control-sm dt-custom-search" placeholder="Nhập từ khóa...">
-                </div>
-                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser">
-                    <i class="feather icon-plus"></i> Thêm Mới
+                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser" style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    white-space: nowrap;
+                ">
+                    <i class="feather icon-plus"></i>
+                    <span>Thêm Mới</span>
                 </button>
             </div>
         </div>
@@ -960,195 +247,332 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
 
     wrapper.prepend(toolbarHtml);
 
-    // Tạo danh sách các cột cho column visibility
+    // Populate column visibility list
     var columnsList = wrapper.find('.colvis-columns-list');
     for (var i = 0; i < totalColumns - 1; i++) {
         var isVisible = api.column(i).visible();
         var itemHtml = `
-            <div class="colvis-item colvis-column-toggle" data-column="${i}">
-                <span class="colvis-check">${isVisible ? '✓' : ''}</span>
-                <span class="colvis-name">${columnNames[i]}</span>
+            <div class="colvis-item colvis-column-toggle" data-column="${i}" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            ">
+                <span class="colvis-check" style="
+                    width: 18px;
+                    height: 18px;
+                    border: 2px solid #ddd;
+                    border-radius: 3px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    color: #4680ff;
+                    font-weight: bold;
+                ">${isVisible ? '✓' : ''}</span>
+                <span class="colvis-name" style="font-size: 14px;">${columnNames[i]}</span>
             </div>
         `;
         columnsList.append(itemHtml);
     }
 
-    // Toggle column visibility dropdown
+    // Add hover effect
+    columnsList.on('mouseenter', '.colvis-column-toggle', function () {
+        $(this).css('background', '#f5f5f5');
+    }).on('mouseleave', '.colvis-column-toggle', function () {
+        $(this).css('background', 'white');
+    });
+
+    // Column visibility button
     wrapper.find('.colvis-btn-custom').on('click', function (e) {
         e.stopPropagation();
         $('.dt-column-dropdown').removeClass('show');
-        wrapper.find('.colvis-dropdown-custom').toggleClass('show');
+        var dropdown = wrapper.find('.colvis-dropdown-custom');
+        if (dropdown.is(':visible')) {
+            dropdown.hide();
+        } else {
+            dropdown.show();
+        }
     });
 
-    // Toggle visibility cho từng cột
+    // Toggle column visibility - FIXED
     wrapper.find('.colvis-column-toggle').on('click', function (e) {
         e.stopPropagation();
         var colIdx = $(this).data('column');
         var column = api.column(colIdx);
         var currentVisibility = column.visible();
+
+        // Toggle visibility
         column.visible(!currentVisibility);
-        $(this).find('.colvis-check').text(!currentVisibility ? '✓' : '');
+
+        // Update checkbox
+        var check = $(this).find('.colvis-check');
+        if (!currentVisibility) {
+            check.text('✓');
+        } else {
+            check.text('');
+        }
+
+        // Keep dropdown open
+        console.log('✅ Column visibility toggled:', columnNames[colIdx], !currentVisibility);
     });
 
-    // Hiện tất cả cột
+    // Show all columns
     wrapper.find('.colvis-show-all').on('click', function (e) {
         e.stopPropagation();
         for (var i = 0; i < totalColumns - 1; i++) {
             api.column(i).visible(true);
         }
         wrapper.find('.colvis-column-toggle .colvis-check').text('✓');
+        wrapper.find('.colvis-dropdown-custom').hide();
+        console.log('✅ All columns shown');
     });
 
     // Page length change
     wrapper.find('.dt-page-length').on('change', function () {
-        var val = $(this).val();
-        api.page.len(parseInt(val)).draw();
+        var pageSize = parseInt($(this).val());
+        localStorage.setItem('userTablePageSize', pageSize);
+
+        if (window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('ChangePageSize', pageSize)
+                .then(() => console.log('✅ Page size changed:', pageSize))
+                .catch(err => console.error('❌ Page size change error:', err));
+        }
     });
 
-    // Custom search
-    wrapper.find('.dt-custom-search').on('keyup', function () {
-        api.search(this.value).draw();
+    // Custom search - FIXED
+    var searchTimeout;
+    wrapper.find('.dt-custom-search').on('input', function (e) {
+        e.stopPropagation();
+        var searchValue = $(this).val();
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            if (window.blazorInstance) {
+                console.log('🔍 Searching:', searchValue);
+                window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue || '')
+                    .then(() => console.log('✅ Search completed'))
+                    .catch(err => console.error('❌ Search error:', err));
+            }
+        }, 500);
     });
 
-    // Nút Thêm Mới - gọi Blazor method
+    // Add new button
     wrapper.find('#btnAddNewUser').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-
         if (window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('OpenAddModal');
-        } else {
-            console.error('Blazor instance not registered');
+            window.blazorInstance.invokeMethodAsync('OpenAddModal')
+                .then(() => console.log('✅ Add modal opened'))
+                .catch(err => console.error('❌ Add modal error:', err));
         }
     });
 }
 
-
-
-
 // ==========================================
-// DATATABLE ROW MANIPULATION - LOCAL STATE
+// CREATE COLUMN MENU
 // ==========================================
+function createColumnMenu(column, header, index) {
+    var menuBtn = $('<span class="dt-column-menu" title="Menu" style="cursor: pointer; margin-left: 8px;"><i class="feather icon-menu"></i></span>');
 
-/**
- * Thêm row mới vào DataTable mà không reload
- */
-window.dtAddRow = function (selector, rowData, userId) {
-    var table = window.dataTableInstances[selector];
-    if (!table) {
-        console.warn('DataTable not found:', selector);
-        return;
+    var dropdown = $(`
+        <div class="dt-column-dropdown" style="
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 99999;
+            min-width: 200px;
+            display: none;
+        ">
+            <div class="dt-dropdown-item dt-sort-asc" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            ">
+                <i class="feather icon-arrow-up"></i>
+                <span>Sắp xếp tăng dần</span>
+            </div>
+            <div class="dt-dropdown-item dt-sort-desc" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            ">
+                <i class="feather icon-arrow-down"></i>
+                <span>Sắp xếp giảm dần</span>
+            </div>
+            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
+            <div class="dt-dropdown-item dt-hide-column" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+            ">
+                <i class="feather icon-eye-off"></i>
+                <span>Ẩn cột này</span>
+            </div>
+            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
+            <div class="dt-dropdown-section" style="padding: 10px 16px;">
+                <label class="dt-dropdown-label" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Kiểu lọc</label>
+                <select class="dt-filter-type form-select form-select-sm">
+                    <option value="contains">Chứa</option>
+                    <option value="equals">Bằng</option>
+                    <option value="starts">Bắt đầu với</option>
+                    <option value="ends">Kết thúc với</option>
+                </select>
+            </div>
+            <div class="dt-dropdown-filter" style="padding: 0 16px 10px;">
+                <input type="text" class="dt-filter-input form-control form-control-sm" placeholder="Nhập giá trị lọc...">
+            </div>
+            <div class="dt-dropdown-item dt-clear-filter" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border-top: 1px solid #eee;
+                transition: background 0.2s;
+            ">
+                <i class="feather icon-x-circle"></i>
+                <span>Xóa bộ lọc</span>
+            </div>
+        </div>
+    `);
+
+    header.append(menuBtn);
+    $('body').append(dropdown);
+
+    // Add hover effects
+    dropdown.find('.dt-dropdown-item').on('mouseenter', function () {
+        $(this).css('background', '#f5f5f5');
+    }).on('mouseleave', function () {
+        $(this).css('background', 'white');
+    });
+
+    // Position dropdown
+    function positionDropdown() {
+        var btnOffset = menuBtn.offset();
+        var btnHeight = menuBtn.outerHeight();
+        var dropdownWidth = dropdown.outerWidth();
+        var left = btnOffset.left - dropdownWidth + menuBtn.outerWidth();
+
+        dropdown.css({
+            top: btnOffset.top + btnHeight + 5,
+            left: Math.max(10, left),
+            display: 'block'
+        });
     }
 
-    try {
-        // Thêm row mới
-        var newRow = table.row.add(rowData);
+    // Toggle dropdown
+    menuBtn.on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
 
-        // Draw lại DataTable (chỉ phần cần thiết)
-        newRow.draw(false);
+        $('.dt-column-dropdown').not(dropdown).hide();
+        $('.colvis-dropdown-custom').hide();
 
-        // Lấy node và set data attribute
-        var rowNode = newRow.node();
-        if (rowNode) {
-            $(rowNode).attr('data-user-id', userId);
-
-            // Highlight row mới
-            $(rowNode).addClass('row-added');
-            setTimeout(function () {
-                $(rowNode).removeClass('row-added');
-            }, 2000);
-
-            // Bind event cho action buttons
-            bindRowActionEvents(rowNode);
+        if (dropdown.is(':visible')) {
+            dropdown.hide();
+        } else {
+            positionDropdown();
         }
+    });
 
-        console.log('Row added successfully:', userId);
-    } catch (error) {
-        console.error('Error adding row:', error);
-    }
-};
+    // Sort ascending
+    dropdown.find('.dt-sort-asc').on('click', function (e) {
+        e.stopPropagation();
+        column.order('asc').draw();
+        dropdown.hide();
+        console.log('✅ Sorted ascending');
+    });
 
-/**
- * Cập nhật row trong DataTable mà không reload
- */
-window.dtUpdateRow = function (selector, userId, rowData) {
-    var table = window.dataTableInstances[selector];
-    if (!table) {
-        console.warn('DataTable not found:', selector);
-        return;
-    }
+    // Sort descending
+    dropdown.find('.dt-sort-desc').on('click', function (e) {
+        e.stopPropagation();
+        column.order('desc').draw();
+        dropdown.hide();
+        console.log('✅ Sorted descending');
+    });
 
-    try {
-        // Tìm row theo data-user-id
-        var rowNode = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+    // Hide column
+    dropdown.find('.dt-hide-column').on('click', function (e) {
+        e.stopPropagation();
+        column.visible(false);
+        dropdown.hide();
+        console.log('✅ Column hidden');
+    });
 
-        if (rowNode.length > 0) {
-            var row = table.row(rowNode);
+    // Filter - FIXED
+    var filterTimeout;
+    dropdown.find('.dt-filter-input').on('input', function (e) {
+        e.stopPropagation();
+        clearTimeout(filterTimeout);
 
-            // Cập nhật data
-            row.data(rowData);
+        var filterType = dropdown.find('.dt-filter-type').val();
+        var filterValue = $(this).val();
 
-            // Draw lại (chỉ row đó)
-            row.draw(false);
-
-            // Lấy lại node sau khi update
-            var updatedNode = row.node();
-            if (updatedNode) {
-                $(updatedNode).attr('data-user-id', userId);
-
-                // Highlight row đã update
-                $(updatedNode).addClass('row-updated');
-                setTimeout(function () {
-                    $(updatedNode).removeClass('row-updated');
-                }, 2000);
-
-                // Re-bind event cho action buttons
-                bindRowActionEvents(updatedNode);
+        filterTimeout = setTimeout(function () {
+            if (!filterValue) {
+                column.search('').draw();
+            } else {
+                var regex = '';
+                switch (filterType) {
+                    case 'equals':
+                        regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue) + '$';
+                        break;
+                    case 'starts':
+                        regex = '^' + $.fn.dataTable.util.escapeRegex(filterValue);
+                        break;
+                    case 'ends':
+                        regex = $.fn.dataTable.util.escapeRegex(filterValue) + '$';
+                        break;
+                    case 'contains':
+                    default:
+                        regex = $.fn.dataTable.util.escapeRegex(filterValue);
+                        break;
+                }
+                column.search(regex, true, false).draw();
             }
+            console.log('✅ Filter applied:', filterType, filterValue);
+        }, 400);
+    });
 
-            console.log('Row updated successfully:', userId);
-        } else {
-            console.warn('Row not found for userId:', userId);
-        }
-    } catch (error) {
-        console.error('Error updating row:', error);
-    }
-};
+    // Clear filter
+    dropdown.find('.dt-clear-filter').on('click', function (e) {
+        e.stopPropagation();
+        dropdown.find('.dt-filter-input').val('');
+        dropdown.find('.dt-filter-type').val('contains');
+        column.search('').draw();
+        dropdown.hide();
+        console.log('✅ Filter cleared');
+    });
 
-/**
- * Xóa row khỏi DataTable mà không reload
- */
-window.dtRemoveRow = function (selector, userId) {
-    var table = window.dataTableInstances[selector];
-    if (!table) {
-        console.warn('DataTable not found:', selector);
-        return;
-    }
+    // Prevent closing
+    dropdown.on('click mousedown', function (e) {
+        e.stopPropagation();
+    });
+}
 
-    try {
-        // Tìm row theo data-user-id
-        var rowNode = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+// ==========================================
+// BIND ROW EVENTS
+// ==========================================
+function bindAllRowEvents(selector) {
+    $(selector + ' tbody tr').each(function () {
+        bindRowActionEvents(this);
+    });
+}
 
-        if (rowNode.length > 0) {
-            // Thêm animation trước khi xóa
-            $(rowNode).addClass('row-removing');
-
-            setTimeout(function () {
-                var row = table.row(rowNode);
-                row.remove().draw(false);
-                console.log('Row removed successfully:', userId);
-            }, 300);
-        } else {
-            console.warn('Row not found for userId:', userId);
-        }
-    } catch (error) {
-        console.error('Error removing row:', error);
-    }
-};
-
-/**
- * Bind event cho action buttons trong row
- */
 function bindRowActionEvents(rowNode) {
     if (!rowNode || !window.blazorInstance) return;
 
@@ -1156,8 +580,9 @@ function bindRowActionEvents(rowNode) {
     $(rowNode).find('.btn-edit-user').off('click').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var userId = $(this).data('user-id');
+        var userId = $(this).data('user-id') || $(this).closest('tr').data('user-id');
         if (userId && window.blazorInstance) {
+            console.log('✏️ Edit user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString());
         }
     });
@@ -1166,18 +591,207 @@ function bindRowActionEvents(rowNode) {
     $(rowNode).find('.btn-delete-user').off('click').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var userId = $(this).data('user-id');
+        var userId = $(this).data('user-id') || $(this).closest('tr').data('user-id');
         if (userId && window.blazorInstance) {
+            console.log('🗑️ Delete user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString());
         }
     });
 }
 
-/**
- * Bind events cho tất cả rows hiện có (gọi sau khi init DataTable)
- */
-window.bindAllRowEvents = function (selector) {
-    $(selector + ' tbody tr').each(function () {
-        bindRowActionEvents(this);
-    });
+// ==========================================
+// DESTROY
+// ==========================================
+window.destroyUserDataTable = function (selector) {
+    console.log('🗑️ Destroying UserDataTable:', selector);
+
+    if (window.dataTableInstances[selector]) {
+        $(document).off('click.dtUserMenu');
+        $(window).off('scroll.dtUserMenu resize.dtUserMenu resize.dtUserResize');
+        $('.dt-column-dropdown').remove();
+        $('.colvis-dropdown-custom').remove();
+        $('.dt-custom-toolbar').remove();
+
+        window.dataTableInstances[selector].destroy();
+        delete window.dataTableInstances[selector];
+        delete window.selectedUserRows[selector];
+
+        console.log('✅ DataTable destroyed');
+    }
 };
+
+window.reinitUserDataTable = function (selector) {
+    window.destroyUserDataTable(selector);
+    window.initUserDataTable(selector);
+};
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+window.getSelectedUserIds = function (selector) {
+    return window.selectedUserRows[selector] || [];
+};
+
+window.clearTableSelection = function (selector) {
+    if (window.dataTableInstances[selector]) {
+        window.dataTableInstances[selector].rows().deselect();
+        window.selectedUserRows[selector] = [];
+    }
+};
+
+
+
+
+
+window.updateUserDataTableData = function (selector, paginatedData) {
+    var table = window.dataTableInstances[selector];
+    if (!table) {
+        console.warn('DataTable not found for update');
+        return;
+    }
+
+    try {
+        // Clear existing data
+        table.clear();
+
+        // Add new data rows
+        if (paginatedData && paginatedData.items && paginatedData.items.length > 0) {
+            paginatedData.items.forEach(function (user) {
+                var rowData = [
+                    user.id,
+                    user.groupId,
+                    user.name,
+                    getUserGenderBadge(user.gender),
+                    user.userName,
+                    user.email || '',
+                    user.phone || '',
+                    user.cmnd || '',
+                    user.address || '',
+                    getUserImageHtml(user.image),
+                    user.note || '',
+                    getUserStatusBadge(user.rowStatus),
+                    formatDateTime(user.createdAt),
+                    user.createdBy,
+                    formatDateTime(user.updatedAt),
+                    user.updatedBy,
+                    getUserActionButtons(user.id)
+                ];
+
+                table.row.add(rowData);
+            });
+        }
+
+        // Draw without resetting paging
+        table.draw(false);
+
+        // Re-bind events
+        bindAllRowEvents(selector);
+
+        console.log('✅ DataTable data updated smoothly');
+    } catch (error) {
+        console.error('❌ Error updating DataTable data:', error);
+    }
+};
+
+/**
+ * Add user row with smooth animation
+ */
+window.addUserRowSmooth = function (selector, userId) {
+    var $row = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+
+    if ($row.length > 0) {
+        // Smooth fade-in and highlight
+        $row.hide().fadeIn(600, function () {
+            $row.addClass('row-added');
+            setTimeout(function () {
+                $row.removeClass('row-added');
+            }, 2000);
+        });
+    }
+};
+
+/**
+ * Update user row with smooth animation
+ */
+window.updateUserRowSmooth = function (selector, userId) {
+    var $row = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+
+    if ($row.length > 0) {
+        // Pulse effect
+        $row.addClass('row-updated');
+        setTimeout(function () {
+            $row.removeClass('row-updated');
+        }, 1500);
+    }
+};
+
+/**
+ * Delete user row with smooth animation
+ */
+window.deleteUserRowSmooth = function (selector, userId) {
+    var $row = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+
+    if ($row.length > 0) {
+        // Smooth slide out and fade
+        $row.addClass('row-removing');
+
+        return new Promise(function (resolve) {
+            setTimeout(function () {
+                $row.fadeOut(300, function () {
+                    $(this).remove();
+                    resolve();
+                });
+            }, 100);
+        });
+    }
+};
+
+// ==========================================
+// HELPER FUNCTIONS FOR ROW RENDERING
+// ==========================================
+
+function getUserGenderBadge(gender) {
+    if (gender === 1) {
+        return '<span class="badge bg-primary">Nam</span>';
+    } else if (gender === 0) {
+        return '<span class="badge bg-info">Nữ</span>';
+    } else {
+        return '<span class="badge bg-secondary">Không xác định</span>';
+    }
+}
+
+function getUserStatusBadge(rowStatus) {
+    if (rowStatus === 1) {
+        return '<span class="badge bg-success">Hoạt động</span>';
+    } else {
+        return '<span class="badge bg-danger">Ngừng hoạt động</span>';
+    }
+}
+
+function getUserImageHtml(image) {
+    if (image) {
+        return '<img src="' + image + '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%;" />';
+    } else {
+        return '<span class="text-muted">-</span>';
+    }
+}
+
+function getUserActionButtons(userId) {
+    return '<button class="btn btn-sm btn-warning me-1 btn-edit-user" data-user-id="' + userId + '" title="Chỉnh sửa">' +
+        '<i class="feather icon-edit"></i></button>' +
+        '<button class="btn btn-sm btn-danger btn-delete-user" data-user-id="' + userId + '" title="Xóa">' +
+        '<i class="feather icon-trash-2"></i></button>';
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '';
+
+    var date = new Date(dateString);
+    var day = ('0' + date.getDate()).slice(-2);
+    var month = ('0' + (date.getMonth() + 1)).slice(-2);
+    var year = date.getFullYear();
+    var hours = ('0' + date.getHours()).slice(-2);
+    var minutes = ('0' + date.getMinutes()).slice(-2);
+
+    return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes;
+}

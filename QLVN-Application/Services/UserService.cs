@@ -1,14 +1,15 @@
-﻿using QLVN_Application.Interfaces;
-using AutoMapper;
+﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using QLVN_Application.Interfaces;
+using QLVN_Contracts.Dtos.Auth;
+using QLVN_Contracts.Dtos.Common;
 using QLVN_Contracts.Dtos.User;
 using QLVN_Domain.Entities;
 using QLVN_Domain.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using QLVN_Contracts.Dtos.Auth;
-using Microsoft.Extensions.Configuration;
 
 namespace QLVN_Application.Services;
 
@@ -32,13 +33,68 @@ public class UserService : IUserService
         var activeUsers = users.Where(u => u.RowStatus == 1).OrderBy(u => u.Id);
         return _mapper.Map<IEnumerable<UserDto>>(activeUsers);
     }
-
+    
     public async Task<UserDto?> GetByIdAsync(string id)
     {
         var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
         return user == null ? null : _mapper.Map<UserDto>(user);
     }
+    public async Task<PaginatedResponse<UserDto>> GetPaginatedAsync(PaginatedRequest request)
+    {
+        var allUsers = await _unitOfWork.Repository<UsUser>().GetAllAsync();
 
+        // Filter active users
+        var query = allUsers.Where(u => u.RowStatus == 1).AsQueryable();
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var searchLower = request.SearchTerm.ToLower();
+            query = query.Where(u =>
+                (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
+                (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
+                (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
+                (u.Phone != null && u.Phone.ToLower().Contains(searchLower))
+            );
+        }
+
+        // Sort
+        query = request.SortColumn?.ToLower() switch
+        {
+            "name" => request.SortDirection == "desc"
+                ? query.OrderByDescending(u => u.Name)
+                : query.OrderBy(u => u.Name),
+            "username" => request.SortDirection == "desc"
+                ? query.OrderByDescending(u => u.UserName)
+                : query.OrderBy(u => u.UserName),
+            "email" => request.SortDirection == "desc"
+                ? query.OrderByDescending(u => u.Email)
+                : query.OrderBy(u => u.Email),
+            "createdat" => request.SortDirection == "desc"
+                ? query.OrderByDescending(u => u.CreatedAt)
+                : query.OrderBy(u => u.CreatedAt),
+            _ => query.OrderBy(u => u.Id) // Default sort by Id
+        };
+
+        // Total count
+        var totalRecords = query.Count();
+
+        // Pagination
+        var items = query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        var userDtos = _mapper.Map<List<UserDto>>(items);
+
+        return new PaginatedResponse<UserDto>
+        {
+            Items = userDtos,
+            TotalRecords = totalRecords,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize
+        };
+    }
     public async Task<UserDto> CreateAsync(CreateUserRequest request)
     {
         // Kiểm tra username đã tồn tại chưa

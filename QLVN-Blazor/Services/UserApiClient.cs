@@ -1,5 +1,6 @@
-﻿using QLVN_Contracts.Dtos.User;
+﻿using QLVN_Contracts.Dtos.Common;
 using QLVN_Contracts.Dtos.Group;
+using QLVN_Contracts.Dtos.User;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -63,7 +64,39 @@ public class UserApiClient
             return null;
         }
     }
+    public async Task<PaginatedResponse<UserDto>> GetPaginatedUsersAsync(PaginatedRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching paginated users from API...");
 
+            var queryString = $"?PageNumber={request.PageNumber}" +
+                             $"&PageSize={request.PageSize}";
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                queryString += $"&SearchTerm={Uri.EscapeDataString(request.SearchTerm)}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.SortColumn))
+            {
+                queryString += $"&SortColumn={request.SortColumn}" +
+                              $"&SortDirection={request.SortDirection}";
+            }
+
+            var response = await _httpClient.GetFromJsonAsync<PaginatedResponse<UserDto>>(
+                $"api/User/paginated{queryString}"
+            );
+
+            _logger.LogInformation("Paginated users fetched successfully.");
+            return response ?? new PaginatedResponse<UserDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching paginated users");
+            return new PaginatedResponse<UserDto>();
+        }
+    }
     public async Task<UserDto?> CreateUserAsync(CreateUserRequest request)
     {
         try

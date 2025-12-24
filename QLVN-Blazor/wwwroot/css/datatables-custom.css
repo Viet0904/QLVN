@@ -857,4 +857,228 @@ table.dataTable tbody tr.selected {
     transition: background-color 0.3s ease;
 }
 
+/* DataTable Row Animations */
+@keyframes rowAdded {
+    0% {
+        background-color: #d4edda;
+        transform: scale(1.02);
+    }
 
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+@keyframes rowUpdated {
+    0% {
+        background-color: #fff3cd;
+        transform: scale(1.01);
+    }
+
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+@keyframes rowRemoving {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+}
+
+.row-added {
+    animation: rowAdded 1.5s ease-out;
+}
+
+.row-updated {
+    animation: rowUpdated 1.2s ease-out;
+}
+
+.row-removing {
+    animation: rowRemoving 0.4s ease-out forwards;
+}
+
+/* Smooth transitions */
+#userDataTable tbody tr {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+    #userDataTable tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Selection style */
+    #userDataTable tbody tr.selected {
+        background-color: #e3f2fd !important;
+    }
+
+/* Loading overlay */
+.dt-processing {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid #4680ff !important;
+    border-radius: 8px !important;
+    padding: 20px 30px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    z-index: 99999 !important;
+}
+
+
+
+
+/* ==========================================
+   SMOOTH TRANSITIONS - NO FLICKERING
+   ========================================== */
+
+/* Prevent layout shift during updates */
+#userDataTable {
+    table-layout: fixed;
+}
+
+    /* Smooth row animations */
+    #userDataTable tbody tr {
+        transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+        will-change: opacity, transform;
+    }
+
+/* Row added animation - Smooth fade in */
+@keyframes rowAddedSmooth {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.98);
+        background-color: #d4edda;
+    }
+
+    50% {
+        background-color: #c3e6cb;
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        background-color: transparent;
+    }
+}
+
+.row-added {
+    animation: rowAddedSmooth 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Row updated animation - Gentle pulse */
+@keyframes rowUpdatedSmooth {
+    0%, 100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+
+    25% {
+        background-color: #fff3cd;
+        transform: scale(1.005);
+    }
+
+    75% {
+        background-color: #fff3cd;
+        transform: scale(1.005);
+    }
+}
+
+.row-updated {
+    animation: rowUpdatedSmooth 1.5s ease-in-out;
+}
+
+/* Row removing animation - Smooth slide out */
+@keyframes rowRemovingSmooth {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+        max-height: 60px;
+    }
+
+    50% {
+        background-color: #f8d7da;
+        transform: translateX(10px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(100px);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+.row-removing {
+    animation: rowRemovingSmooth 0.4s ease-out forwards;
+    overflow: hidden;
+}
+
+/* Smooth hover */
+#userDataTable tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transform: translateX(2px);
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Prevent flash of unstyled content */
+#userDataTable tbody {
+    min-height: 200px;
+}
+
+/* Loading state - no jerky */
+.table-responsive {
+    position: relative;
+    min-height: 300px;
+}
+
+/* Smooth search input */
+.dt-custom-search {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .dt-custom-search:focus {
+        border-color: #4680ff !important;
+        box-shadow: 0 0 0 0.2rem rgba(70, 128, 255, 0.25) !important;
+    }
+
+/* Pagination smooth */
+.dt-custom-pagination button {
+    transition: all 0.2s ease;
+}
+
+    .dt-custom-pagination button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+/* GPU acceleration for better performance */
+.row-added,
+.row-updated,
+.row-removing,
+#userDataTable tbody tr {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+}
+
+    /* Reduce paint operations */
+    #userDataTable tbody tr * {
+        pointer-events: auto;
+    }
+
+/* Optimize re-paint area */
+.card-block {
+    contain: layout style paint;
+}

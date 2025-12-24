@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using QLVN_Contracts.Dtos.User
 @using QLVN_Contracts.Dtos.Group
+@using QLVN_Contracts.Dtos.Common
 @using QLVN_Blazor.Services
 @using QLVN_Blazor.Models
 @using Microsoft.AspNetCore.Components.Forms
@@ -34,7 +35,7 @@
                         <p class="mt-2">Đang tải dữ liệu...</p>
                     </div>
                 }
-                else if (allUsers == null || !allUsers.Any())
+                else if (paginatedUsers == null || !paginatedUsers.Items.Any())
                 {
                     <div class="alert alert-info">
                         <strong>Thông báo:</strong> Không có dữ liệu người dùng.
@@ -66,7 +67,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var user in allUsers)
+                                @foreach (var user in paginatedUsers.Items)
                                 {
                                     <tr data-user-id="@user.Id" @key="user.Id">
                                         <td>@user.Id</td>
@@ -130,6 +131,46 @@
                                 }
                             </tbody>
                         </table>
+                    <div class="dt-custom-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div class="dt-pagination-info">
+                            Hiển thị từ @((paginationRequest.PageNumber - 1) * paginationRequest.PageSize + 1)
+                            đến @(Math.Min(paginationRequest.PageNumber * paginationRequest.PageSize, paginatedUsers.TotalRecords))
+                            trong @paginatedUsers.TotalRecords bản ghi
+                        </div>
+                        <div class="dt-pagination-buttons">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => ChangePage(1)"
+                                    disabled="@(!paginatedUsers.HasPreviousPage)">
+                                «
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => ChangePage(paginationRequest.PageNumber - 1)"
+                                    disabled="@(!paginatedUsers.HasPreviousPage)">
+                                ‹
+                            </button>
+                            <span class="mx-2">Trang @paginationRequest.PageNumber / @paginatedUsers.TotalPages</span>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => ChangePage(paginationRequest.PageNumber + 1)"
+                                    disabled="@(!paginatedUsers.HasNextPage)">
+                                ›
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => ChangePage(paginatedUsers.TotalPages)"
+                                    disabled="@(!paginatedUsers.HasNextPage)">
+                                »
+                            </button>
+                        </div>
+                    </div>
+
+                    @code {
+                        private async Task ChangePage(int pageNumber)
+                        {
+                            paginationRequest.PageNumber = pageNumber;
+                            await LoadData();
+                            await RefreshDataTable();
+                        }
+                    }
+                        
                     </div>
                 }
             </div>
@@ -153,13 +194,20 @@
            OnClose="CloseModals" />
 
 @code {
-    private List<UserDto>? allUsers;
+    // ✅ State cho pagination
+    private PaginatedResponse<UserDto> paginatedUsers = new();
+    private PaginatedRequest paginationRequest = new() { PageNumber = 1, PageSize = 10 };
+
     private List<GroupDto> allGroups = new();
     private bool isLoading = true;
     private bool dataTableInitialized = false;
     private bool layoutInitialized = false;
     private DotNetObjectReference<UserList>? objRef;
     private string tableId = "userDataTable";
+    // Add search term
+    private string searchTerm = string.Empty;
+
+    private bool isSearching = false; // Thêm flag này
 
     // Modal states
     private UserFormModel userFormModel = new();
@@ -180,7 +228,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (allUsers?.Any() == true && !layoutInitialized)
+        if (paginatedUsers.Items.Any() && !layoutInitialized)
         {
             layoutInitialized = true;
 
@@ -208,8 +256,8 @@
                 dataTableInitialized = true;
                 await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
             }
-            // ✅ Tắt loader SAU KHI hoàn tất
-            await Task.Delay(300); // Đợi DataTable render
+
+            await Task.Delay(300);
             await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
         }
     }
@@ -245,128 +293,96 @@
         }
     }
 
+    // ✅ JSInvokable methods cho pagination
+    [JSInvokable("LoadPage")]
+    public async Task LoadPage(int pageNumber)
+    {
+        paginationRequest.PageNumber = pageNumber;
+        await LoadData();
+    }
+    [JSInvokable("SearchUsers")]
+    public async Task SearchUsers(string term)
+    {
+        if (isSearching) return; // Prevent concurrent searches
+
+        isSearching = true;
+        try
+        {
+            searchTerm = term ?? string.Empty;
+            paginationRequest.SearchTerm = searchTerm;
+            paginationRequest.PageNumber = 1;
+
+            // Load data WITHOUT triggering StateHasChanged multiple times
+            paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
+
+            // Chỉ update DataTable data, KHÔNG destroy/recreate
+            await UpdateDataTableData();
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    [JSInvokable("ChangePageSize")]
+    public async Task ChangePageSize(int pageSize)
+    {
+        paginationRequest.PageSize = pageSize;
+        paginationRequest.PageNumber = 1;
+
+        // Load data WITHOUT StateHasChanged
+        paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
+
+        // Update DataTable
+        await UpdateDataTableData();
+    }
+
+    
+
+    // NEW: Update DataTable without destroying it
+    private async Task UpdateDataTableData()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Update DataTable error: {ex.Message}");
+            // Fallback to full refresh
+            await RefreshDataTable();
+        }
+    }
+
+    private async Task RefreshDataTable()
+    {
+        await DestroyDataTable();
+        await Task.Delay(50); // Giảm delay
+        await InitDataTable();
+    }
+
     [JSInvokable("OpenAddModal")]
     public async Task OpenAddModalFromJS()
     {
         await OpenAddModal();
     }
 
+    // ✅ Load data với pagination
     private async Task LoadData()
     {
-        allUsers = await UserService.GetUserAllSync();
+        isLoading = true;
+        StateHasChanged();
+
+        paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
+
+        isLoading = false;
+        StateHasChanged();
     }
 
     private async Task LoadGroups()
     {
         allGroups = await UserService.GetAllGroupsAsync();
     }
-
-    #region Local State Update Methods
-
-    /// <summary>
-    /// Thêm user mới vào local state và cập nhật DataTable (KHÔNG gọi StateHasChanged)
-    /// </summary>
-    private async Task AddUserToLocalState(UserDto newUser)
-    {
-        if (allUsers == null) allUsers = new List<UserDto>();
-
-        // Thêm vào đầu danh sách
-        allUsers.Insert(0, newUser);
-
-        // Cập nhật DataTable qua JS - DataTable sẽ tự quản lý DOM
-        var rowData = BuildRowDataArray(newUser);
-        await JS.InvokeVoidAsync("dtAddRow", $"#{tableId}", rowData, newUser.Id);
-
-        // KHÔNG gọi StateHasChanged() - để tránh Blazor re-render DOM
-    }
-
-    /// <summary>
-    /// Cập nhật user trong local state và DataTable (KHÔNG gọi StateHasChanged)
-    /// </summary>
-    private async Task UpdateUserInLocalState(UserDto updatedUser)
-    {
-        if (allUsers == null) return;
-
-        var index = allUsers.FindIndex(u => u.Id == updatedUser.Id);
-        if (index >= 0)
-        {
-            allUsers[index] = updatedUser;
-
-            // Cập nhật DataTable qua JS
-            var rowData = BuildRowDataArray(updatedUser);
-            await JS.InvokeVoidAsync("dtUpdateRow", $"#{tableId}", updatedUser.Id, rowData);
-        }
-
-        // KHÔNG gọi StateHasChanged()
-    }
-
-    /// <summary>
-    /// Xóa user khỏi local state và DataTable (KHÔNG gọi StateHasChanged)
-    /// </summary>
-    private async Task RemoveUserFromLocalState(string userId)
-    {
-        if (allUsers == null) return;
-
-        // Xóa khỏi local list TRƯỚC
-        allUsers.RemoveAll(u => u.Id == userId);
-
-        // Xóa row trong DataTable qua JS - DataTable sẽ tự quản lý DOM
-        await JS.InvokeVoidAsync("dtRemoveRow", $"#{tableId}", userId);
-
-        // KHÔNG gọi StateHasChanged() - Blazor sẽ không cố render lại row đã bị xóa
-    }
-
-    /// <summary>
-    /// Build mảng dữ liệu cho row DataTable
-    /// </summary>
-    private object[] BuildRowDataArray(UserDto user)
-    {
-        var genderHtml = user.Gender switch
-        {
-            1 => "<span class=\"badge bg-primary\">Nam</span>",
-            0 => "<span class=\"badge bg-info\">Nữ</span>",
-            _ => "<span class=\"badge bg-secondary\">Không xác định</span>"
-        };
-
-        var imageHtml = !string.IsNullOrEmpty(user.Image)
-            ? $"<img src=\"{user.Image}\" alt=\"Avatar\" style=\"width: 40px; height: 40px; border-radius: 50%;\" />"
-            : "<span class=\"text-muted\">-</span>";
-
-        var statusHtml = user.RowStatus == 1
-            ? "<span class=\"badge bg-success\">Hoạt động</span>"
-            : "<span class=\"badge bg-danger\">Ngừng hoạt động</span>";
-
-        var actionHtml = $@"
-            <button class=""btn btn-sm btn-warning me-1 btn-edit-user"" title=""Chỉnh sửa"" data-user-id=""{user.Id}"">
-                <i class=""feather icon-edit""></i>
-            </button>
-            <button class=""btn btn-sm btn-danger btn-delete-user"" title=""Xóa"" data-user-id=""{user.Id}"">
-                <i class=""feather icon-trash-2""></i>
-            </button>";
-
-        return new object[]
-        {
-            user.Id,
-            user.GroupId ?? "",
-            user.Name ?? "",
-            genderHtml,
-            user.UserName ?? "",
-            user.Email ?? "",
-            user.Phone ?? "",
-            user.Cmnd ?? "",
-            user.Address ?? "",
-            imageHtml,
-            user.Note ?? "",
-            statusHtml,
-            user.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
-            user.CreatedBy ?? "",
-            user.UpdatedAt.ToString("dd/MM/yyyy HH:mm"),
-            user.UpdatedBy ?? "",
-            actionHtml
-        };
-    }
-
-    #endregion
 
     #region Modal Operations
 
@@ -405,7 +421,7 @@
     [JSInvokable("OpenEditModalById")]
     public async Task OpenEditModalById(string userId)
     {
-        var user = allUsers?.FirstOrDefault(u => u.Id == userId);
+        var user = paginatedUsers.Items.FirstOrDefault(u => u.Id == userId);
         if (user != null)
         {
             await OpenEditModal(user);
@@ -415,7 +431,7 @@
     [JSInvokable("OpenDeleteModalById")]
     public async Task OpenDeleteModalById(string userId)
     {
-        var user = allUsers?.FirstOrDefault(u => u.Id == userId);
+        var user = paginatedUsers.Items.FirstOrDefault(u => u.Id == userId);
         if (user != null)
         {
             await OpenDeleteModal(user);
@@ -480,124 +496,48 @@
 
             if (!isEditMode)
             {
-                // === CREATE ===
-                if (string.IsNullOrWhiteSpace(password))
+                // CREATE
+                var newUser = await UserService.CreateUserAsync(createRequest);
+
+                if (newUser != null)
                 {
-                    await ShowNotification("error", "Vui lòng nhập mật khẩu!");
-                    return;
-                }
+                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
-                if (password != confirmPassword)
-                {
-                    await ShowNotification("error", "Mật khẩu xác nhận không khớp!");
-                    return;
-                }
-
-                var createRequest = new CreateUserRequest
-                {
-                    Name = userFormModel.Name,
-                    UserName = userFormModel.UserName,
-                    Password = password,
-                    GroupId = userFormModel.GroupId,
-                    Email = userFormModel.Email,
-                    Phone = userFormModel.Phone,
-                    Gender = userFormModel.Gender,
-                    Cmnd = userFormModel.Cmnd,
-                    Address = userFormModel.Address,
-                    Note = userFormModel.Note,
-                    RowStatus = userFormModel.RowStatus
-                };
-
-                try
-                {
-                    var newUser = await UserService.CreateUserAsync(createRequest);
-
-                    if (newUser != null)
-                    {
-                        // Đóng modal trước
-                        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-
-                        // Reset form state
-                        userFormModel = new UserFormModel();
-                        password = string.Empty;
-                        confirmPassword = string.Empty;
-                        isProcessing = false;
-
-                        await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
-
-                        // Local state update
-                        await AddUserToLocalState(newUser);
-                    }
-                    else
-                    {
-                        await ShowNotification("error", "Không thể tạo người dùng!");
-                    }
-                }
-                catch (HttpRequestException httpEx)
-                {
-                    // ✅ Hiển thị lỗi từ API (trùng username, etc.)
-                    await ShowNotification("error", httpEx.Message);
-
-                    // KHÔNG đóng modal, để user sửa lại username
+                    userFormModel = new UserFormModel();
+                    password = string.Empty;
+                    confirmPassword = string.Empty;
                     isProcessing = false;
-                    StateHasChanged();
-                    return; // Thoát khỏi method
+
+                    await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
+
+                    // Smooth reload
+                    paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
+                    await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
                 }
             }
             else
             {
-                // === UPDATE ===
-                var updateRequest = new UpdateUserRequest
+                // UPDATE
+                var updatedUser = await UserService.UpdateUserAsync(updateRequest);
+
+                if (updatedUser != null)
                 {
-                    Id = userFormModel.Id,
-                    Name = userFormModel.Name,
-                    GroupId = userFormModel.GroupId,
-                    Email = userFormModel.Email,
-                    Phone = userFormModel.Phone,
-                    Gender = userFormModel.Gender,
-                    Cmnd = userFormModel.Cmnd,
-                    Address = userFormModel.Address,
-                    Note = userFormModel.Note,
-                    RowStatus = userFormModel.RowStatus
-                };
+                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
-                try
-                {
-                    var updatedUser = await UserService.UpdateUserAsync(updateRequest);
-
-                    if (updatedUser != null)
-                    {
-                        // Đóng modal trước
-                        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-
-                        // Reset form state
-                        userFormModel = new UserFormModel();
-                        isProcessing = false;
-
-                        await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
-
-                        // Local state update
-                        await UpdateUserInLocalState(updatedUser);
-                    }
-                    else
-                    {
-                        await ShowNotification("error", "Không thể cập nhật người dùng!");
-                    }
-                }
-                catch (HttpRequestException httpEx)
-                {
-                    // ✅ Hiển thị lỗi từ API
-                    await ShowNotification("error", httpEx.Message);
+                    userFormModel = new UserFormModel();
                     isProcessing = false;
-                    StateHasChanged();
-                    return;
+
+                    await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
+
+                    // Smooth update
+                    paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
+                    await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUser.Id);
                 }
             }
         }
         catch (Exception ex)
         {
-            // Lỗi không mong đợi
-            await ShowNotification("error", $"Lỗi không mong đợi: {ex.Message}");
+            await ShowNotification("error", $"Lỗi : {ex.Message}");
         }
         finally
         {
@@ -611,17 +551,19 @@
         if (string.IsNullOrEmpty(deleteUserId) || isProcessing) return;
 
         isProcessing = true;
-        StateHasChanged();
 
-        var nameToDelete = deleteUserName;
         var idToDelete = deleteUserId;
+        var nameToDelete = deleteUserName;
 
         try
         {
-            // Đóng modal TRƯỚC khi xóa
+            // Smooth delete animation
+            await JS.InvokeVoidAsync("deleteUserRowSmooth", $"#{tableId}", idToDelete);
+
+            await Task.Delay(400); // Wait for animation
+
             await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
 
-            // Reset state ngay
             deleteUserId = string.Empty;
             deleteUserName = string.Empty;
 
@@ -631,8 +573,8 @@
             {
                 await ShowNotification("success", $"Xóa người dùng '{nameToDelete}' thành công!");
 
-                // Xóa khỏi local state - KHÔNG gọi StateHasChanged
-                await RemoveUserFromLocalState(idToDelete);
+                // Reload data
+                paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
             }
             else
             {
@@ -646,7 +588,6 @@
         finally
         {
             isProcessing = false;
-            // KHÔNG gọi StateHasChanged() ở đây để tránh Blazor re-render table
         }
     }
 

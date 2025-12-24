@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QLVN_Application.Interfaces;
+using QLVN_Contracts.Dtos.Common;
 using QLVN_Contracts.Dtos.User;
-using Microsoft.AspNetCore.Authorization;
 
 namespace QLVN_API.Controllers
 {
@@ -23,6 +24,12 @@ namespace QLVN_API.Controllers
             if (user == null)
                 return NotFound(new { message = $"Không tìm thấy người dùng với ID: {id}" });
             return Ok(user);
+        }
+        [HttpGet("paginated")]
+        public async Task<IActionResult> GetPaginated([FromQuery] PaginatedRequest request)
+        {
+            var result = await _userService.GetPaginatedAsync(request);
+            return Ok(result);
         }
 
         [HttpPost]
