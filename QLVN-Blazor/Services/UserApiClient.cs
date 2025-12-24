@@ -12,8 +12,7 @@ namespace QLVN_Blazor.Services
         {
             _httpClient = httpClient;
             _logger = logger;
-            _httpClient.Timeout = TimeSpan.FromSeconds(30); // Fix timeout nếu slow
-            _httpClient.BaseAddress = new Uri("https://localhost:5084/"); // Đảm bảo đúng API port
+            
         }
 
         public async Task<List<UserDto>> GetUserAllSync()

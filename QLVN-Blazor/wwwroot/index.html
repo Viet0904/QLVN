@@ -23,10 +23,12 @@
     <link rel="stylesheet" type="text/css" href="css/feather.css">
 
     <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" />
-    <link rel="stylesheet" href="css/dataTables.dataTables.css" />
 
+    <link rel="stylesheet" href="css/dataTables.dataTables.min.css" />
+    <link rel="stylesheet" href="/css/select.dataTables.min.css" />
+
+    <!-- Custom DataTables CSS  -->
+    <link rel="stylesheet" href="css/datatables-custom.css" /> 
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.css">
@@ -102,27 +104,17 @@
     <script src="js/css-scrollbars.js"></script>
 
     <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-    <script src="js/datatables.js"></script>
+    <script src="js/dataTables.min.js"></script>
+    <script src="js/dataTables.select.min.js"></script>
+    <!-- DataTables Buttons Extension -->
+    <script src="js/dataTables.buttons.js"></script>
+    <script src="js/buttons.dataTables.js"></script>
+    <script src="js/buttons.colVis.min.js"></script>
+
     <script src="js/datatables_custom.js"></script>
     <script src="js/data-table-custom.js"></script>
 
-    <!-- PCoded (AFTER Plugins, with menu config) -->
-    <script>
-        // Định nghĩa global menu config cho PCoded (fix ReferenceError)
-        window.menu = {
-            // Config mẫu: Adjust theo theme docs (e.g., pcoded.com)
-            themeLayout: 'vertical',
-            themeColor: 'theme1',
-            themeStyle: 'default',
-            subItemPrefix: 'subitem',
-            activeMenuClass: 'active',
-            themeMode: 'light'
-        };
-    </script>
+
     <script src="js/pcoded.min.js"></script>
     <script src="js/vartical-layout.min.js"></script>
 

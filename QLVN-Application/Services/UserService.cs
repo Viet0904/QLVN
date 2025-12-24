@@ -77,7 +77,7 @@ namespace QLVN_Application.Services
             }
 
             user.UpdatedAt = DateTime.Now;
-            user.UpdatedBy = "SYSTEM"; // Nên lấy từ Claims của User hiện tại
+            user.UpdatedBy = "SYSTEM"; 
 
             _unitOfWork.Repository<UsUser>().Update(user);
             await _unitOfWork.SaveChangesAsync(); // Thêm await để sửa cảnh báo CS1998

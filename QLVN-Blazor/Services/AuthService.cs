@@ -90,7 +90,7 @@ namespace QLVN_Blazor.Services
         {
             await _localStorage.RemoveItemAsync("authToken");
             ((CustomAuthStateProvider)_authStateProvider).NotifyUserLogout();
-            // Không hiển thị notification ở đây, sẽ redirect ngay
+            
         }
     }
 }

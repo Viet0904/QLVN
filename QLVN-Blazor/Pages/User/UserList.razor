@@ -2,214 +2,178 @@
 @using QLVN_Contracts.Dtos.User
 @using QLVN_Blazor.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject AuthenticationStateProvider AuthStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
 @inject UserApiClient UserService
 @inject NotificationService NotificationService
 @inject IJSRuntime JS
 @implements IDisposable
 
-<h3>Danh sách người dùng</h3>
 
-@if (isLoading)
-{
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p>Đang tải dữ liệu...</p>
-    </div>
-}
-else if (allUsers == null || !allUsers.Any())
-{
-    <div class="alert alert-warning">Không có dữ liệu người dùng.</div>
-    <button class="btn btn-primary" @onclick="OpenAddModal">Thêm người dùng mới</button>
-}
-else
-{
-    <div class="mb-3">
-        <button class="btn btn-primary" @onclick="OpenAddModal">Thêm người dùng mới</button>
-    </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Danh sách người dùng</h5>
+                <div class="card-header-right">
+                    <ul class="list-unstyled card-option">
+                        <li><i class="feather icon-maximize full-card"></i></li>
+                        <li><i class="feather icon-minus minimize-card"></i></li>
+                    </ul>
+                </div>
+            </div>
 
-    <div class="table-responsive">
-        <table id="myTable" class="table table-striped table-hover" style="width:100%">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Tên</th>
-                    <th>Email</th>
-                    <th>Điện thoại</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in allUsers)
+            <div class="card-block">
+                @if (isLoading)
                 {
-                    <tr data-user-id="@user.Id">
-                        <td>@user.Id</td>
-                        <td>@user.Name</td>
-                        <td>@user.Email</td>
-                        <td>@user.Phone</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" @onclick="() => OpenEditModal(user.Id)">Sửa</button>
-                            <button class="btn btn-sm btn-danger" @onclick="() => OpenDeleteModal(user.Id)">Xóa</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
-
-<!-- Modal Add/Edit User -->
-<div class="modal fade @(isModalOpen ? "show" : "")" id="userModal" tabindex="-1" style="display: @(isModalOpen ? "block" : "none");" data-bs-backdrop="static">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">@(isEditMode ? "Chỉnh sửa người dùng" : "Thêm người dùng mới")</h5>
-                <button type="button" class="btn-close" @onclick="CloseModal"></button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@currentUser" OnValidSubmit="@HandleSubmitAsync" FormName="UserForm">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-
-                    <div class="mb-3">
-                        <label for="Name" class="form-label">Tên</label>
-                        <InputText id="Name" class="form-control" @bind-Value="currentUser.Name" />
-                        <ValidationMessage For="@(() => currentUser.Name)" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="UserName" class="form-label">Tên đăng nhập</label>
-                        <InputText id="UserName" class="form-control" @bind-Value="currentUser.UserName" />
-                        <ValidationMessage For="@(() => currentUser.UserName)" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="Email" class="form-label">Email</label>
-                        <InputText id="Email" class="form-control" @bind-Value="currentUser.Email" />
-                        <ValidationMessage For="@(() => currentUser.Email)" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="Phone" class="form-label">Điện thoại</label>
-                        <InputText id="Phone" class="form-control" @bind-Value="currentUser.Phone" />
-                        <ValidationMessage For="@(() => currentUser.Phone)" />
-                    </div>
-
-                    @if (isAddMode)
-                    {
-                        <div class="mb-3">
-                            <label for="Password" class="form-label">Mật khẩu</label>
-                            <InputText id="Password" type="password" class="form-control" @bind-Value="@password" />
-                            <ValidationMessage For="@(() => password)" />
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    }
-
-                    <div class="mb-3">
-                        <label for="GroupId" class="form-label">Nhóm</label>
-                        <InputText id="GroupId" class="form-control" @bind-Value="currentUser.GroupId" />
-                        <ValidationMessage For="@(() => currentUser.GroupId)" />
+                        <p class="mt-2">Đang tải dữ liệu...</p>
                     </div>
-                </EditForm>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Đóng</button>
-                <button type="submit" class="btn btn-primary" form="UserForm">@(isEditMode ? "Cập nhật" : "Thêm mới")</button>
+                }
+                else if (allUsers == null || !allUsers.Any())
+                {
+                    <div class="alert alert-info">
+                        <strong>Thông báo:</strong> Không có dữ liệu người dùng.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table id="userDataTable" class="table table-striped table-hover table-bordered" style="width:100%">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Nhóm</th>
+                                    <th>Tên</th>
+                                    <th>Giới tính</th>
+                                    <th>Tên đăng nhập</th>
+                                    <th>Email</th>
+                                    <th>Điện thoại</th>
+                                    <th>CMND/CCCD</th>
+                                    <th>Địa chỉ</th>
+                                    <th>Hình ảnh</th>
+                                    <th>Ghi chú</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Người tạo</th>
+                                    <th>Ngày cập nhật</th>
+                                    <th>Người cập nhật</th>
+                                    <th style="width: 120px;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in allUsers)
+                                {
+                                    <tr data-user-id="@user.Id">
+                                        <td>@user.Id</td>
+                                        <td>@user.GroupId</td>
+                                        <td>@user.Name</td>
+                                        <td>
+                                            @if (user.Gender == 1)
+                                            {
+                                                <span class="badge bg-primary">Nam</span>
+                                            }
+                                            else if (user.Gender == 0)
+                                            {
+                                                <span class="badge bg-info">Nữ</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Không xác định</span>
+                                            }
+                                        </td>
+                                        <td>@user.UserName</td>
+                                        <td>@user.Email</td>
+                                        <td>@user.Phone</td>
+                                        <td>@user.Cmnd</td>
+                                        <td>@user.Address</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(user.Image))
+                                            {
+                                                <img src="@user.Image" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%;" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>@user.Note</td>
+                                        <td>
+                                            @if (user.RowStatus == 1)
+                                            {
+                                                <span class="badge bg-success">Hoạt động</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Ngừng hoạt động</span>
+                                            }
+                                        </td>
+                                        <td>@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@user.CreatedBy</td>
+                                        <td>@user.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@user.UpdatedBy</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning me-1" title="Chỉnh sửa">
+                                                <i class="feather icon-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" title="Xóa">
+                                                <i class="feather icon-trash-2"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Confirm Delete -->
-<div class="modal fade @(isDeleteModalOpen ? "show" : "")" id="deleteModal" tabindex="-1" style="display: @(isDeleteModalOpen ? "block" : "none");">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận xóa</h5>
-                <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn xóa người dùng <strong>@selectedUserName</strong>?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Hủy</button>
-                <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteAsync">Xóa</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 @code {
     private List<UserDto>? allUsers;
     private bool isLoading = true;
-    private bool isDataTableInitialized = false;
-    private bool isModalOpen = false;
-    private bool isEditMode = false;
-    private bool isAddMode => !isEditMode;
-    private bool isDeleteModalOpen = false;
-    private UserDto? currentUser = new();
-    private string? selectedUserId;
-    private string selectedUserName = string.Empty;
-    private string password = string.Empty;
+    private bool dataTableInitialized = false;
+    private bool layoutInitialized = false;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            await LoadData();
-        }
-        catch (Exception ex)
-        {
-            await NotificationService.ShowErrorAsync($"Lỗi tải dữ liệu: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
-        }
+        await LoadData();
+        isLoading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+
+        if (allUsers?.Any() == true && !layoutInitialized)
         {
-            try
-            {
-                await Task.Delay(500); // Delay để DOM ready
+            layoutInitialized = true;
 
-                // Load scripts essentials
-                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables.js");
-                await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/datatables_custom.js");
-
-                // Theme basics
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
-
-                // Hide loader/customizer
-                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
-                await JS.InvokeVoidAsync("destroyCustomizer");
-                await JS.InvokeVoidAsync("eval",
-                    "$('#pcoded-mCustomizer').addClass('d-none').hide(); " +
-                    "$('.customizer-toggle').hide();");
-
-                // Init DataTable
-                if (allUsers?.Any() == true)
-                {
-                    await JS.InvokeVoidAsync("initDataTable", "#myTable");
-                    isDataTableInitialized = true;
-                    // Force re-draw để bật features (search/sort/pagination)
-                    await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
+            // 1. Đóng sidebar customizer (BỎ visibility = hidden)
+            await JS.InvokeVoidAsync("eval", @"
+                var styleSelector = document.getElementById('styleSelector');
+                if (styleSelector) {
+                    styleSelector.classList.remove('open');
                 }
+            ");
 
-                await JS.InvokeVoidAsync("initCustomPlugins");
-            }
-            catch (Exception ex)
+            // 2. Re-load các script layout chính của Adminty
+            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/pcoded.min.js');");
+            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/vartical-layout.min.js');");
+            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/script.js');");
+
+            // 3. Đợi layout re-init xong rồi mới init DataTables
+            await Task.Delay(300);
+
+            if (!dataTableInitialized)
             {
-                Console.WriteLine($"Init Error: {ex.Message}");
-                await JS.InvokeVoidAsync("eval",
-                    "$('.theme-loader, #pcoded-mCustomizer').hide(); " +
-                    "$('#myTable').DataTable().draw(false);");
+                await JS.InvokeVoidAsync("initUserDataTable", "#userDataTable");
+                dataTableInitialized = true;
             }
         }
     }
@@ -217,185 +181,20 @@ else
     private async Task LoadData()
     {
         allUsers = await UserService.GetUserAllSync();
-        StateHasChanged();
-        if (isDataTableInitialized)
-        {
-            await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
-        }
-    }
 
-    private void OpenAddModal()
-    {
-        isEditMode = false;
-        currentUser = new UserDto { RowStatus = 1 };
-        password = string.Empty;
-        isModalOpen = true;
-        selectedUserId = null;
+        if (dataTableInitialized)
+        {
+            await JS.InvokeVoidAsync("reinitUserDataTable", "#userDataTable");
+        }
+
         StateHasChanged();
     }
 
-    private async Task OpenEditModal(string id)
+    public void Dispose()
     {
-        try
+        if (dataTableInitialized)
         {
-            var user = await UserService.GetByIdAsync(id);
-            if (user != null)
-            {
-                isEditMode = true;
-                currentUser = user;
-                isModalOpen = true;
-                selectedUserId = id;
-                StateHasChanged();
-            }
-            else
-            {
-                await NotificationService.ShowErrorAsync("Không tìm thấy người dùng để chỉnh sửa.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await NotificationService.ShowErrorAsync($"Lỗi tải thông tin: {ex.Message}");
-        }
-    }
-
-    private void OpenDeleteModal(string id)
-    {
-        selectedUserId = id;
-        var user = allUsers?.FirstOrDefault(u => u.Id == id);
-        selectedUserName = user?.Name ?? "Không xác định";
-        isDeleteModalOpen = true;
-        StateHasChanged();
-    }
-
-    private void CloseModal()
-    {
-        isModalOpen = false;
-        currentUser = new();
-        password = string.Empty;
-        StateHasChanged();
-    }
-
-    private void CloseDeleteModal()
-    {
-        isDeleteModalOpen = false;
-        selectedUserId = null;
-        selectedUserName = string.Empty;
-        StateHasChanged();
-    }
-
-    private async Task HandleSubmitAsync()
-    {
-        try
-        {
-            bool success = false;
-            if (isAddMode)
-            {
-                var request = new CreateUserRequest
-                {
-                    Name = currentUser.Name,
-                    UserName = currentUser.UserName,
-                    Email = currentUser.Email,
-                    Phone = currentUser.Phone,
-                    GroupId = currentUser.GroupId,
-                    Password = password
-                };
-                success = await UserService.CreateAsync(request);
-                if (success)
-                {
-                    await LoadData();
-                    await JS.InvokeVoidAsync("reinitDataTable", "#myTable");
-                    await NotificationService.ShowSuccessAsync("Thêm người dùng thành công!");
-                }
-            }
-            else
-            {
-                var request = new UpdateUserRequest
-                {
-                    Name = currentUser.Name,
-                    UserName = currentUser.UserName,
-                    Email = currentUser.Email,
-                    Phone = currentUser.Phone,
-                    GroupId = currentUser.GroupId
-                };
-                success = await UserService.UpdateAsync(selectedUserId!, request);
-                if (success)
-                {
-                    await UpdateDataTableRow(selectedUserId!, currentUser);
-                    var localUser = allUsers?.FirstOrDefault(u => u.Id == selectedUserId);
-                    if (localUser != null)
-                    {
-                        localUser.Name = currentUser.Name;
-                        localUser.Email = currentUser.Email;
-                        localUser.Phone = currentUser.Phone;
-                        localUser.GroupId = currentUser.GroupId;
-                    }
-                    await NotificationService.ShowSuccessAsync("Cập nhật người dùng thành công!");
-                }
-            }
-
-            if (success)
-            {
-                CloseModal();
-            }
-            else
-            {
-                await NotificationService.ShowErrorAsync("Thao tác thất bại. Vui lòng thử lại.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await NotificationService.ShowErrorAsync($"Lỗi thực hiện: {ex.Message}");
-        }
-    }
-
-    private async Task ConfirmDeleteAsync()
-    {
-        if (selectedUserId == null) return;
-
-        try
-        {
-            var success = await UserService.DeleteAsync(selectedUserId);
-            if (success)
-            {
-                await RemoveDataTableRow(selectedUserId);
-                allUsers?.RemoveAll(u => u.Id == selectedUserId);
-                await NotificationService.ShowSuccessAsync("Xóa người dùng thành công!");
-            }
-            else
-            {
-                await NotificationService.ShowErrorAsync("Xóa thất bại. Vui lòng thử lại.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await NotificationService.ShowErrorAsync($"Lỗi xóa: {ex.Message}");
-        }
-        finally
-        {
-            CloseDeleteModal();
-        }
-    }
-
-    private async Task UpdateDataTableRow(string id, UserDto updatedUser)
-    {
-        if (!isDataTableInitialized) return;
-        await JS.InvokeVoidAsync("updateDataTableRow", "#myTable", id, updatedUser);
-        await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
-    }
-
-    private async Task RemoveDataTableRow(string id)
-    {
-        if (!isDataTableInitialized) return;
-        await JS.InvokeVoidAsync("removeDataTableRow", "#myTable", id);
-        await JS.InvokeVoidAsync("eval", "$('#myTable').DataTable().draw(false);");
-    }
-
-    public async void Dispose()
-    {
-        if (isDataTableInitialized)
-        {
-            await JS.InvokeVoidAsync("destroyDataTable", "#myTable");
-            isDataTableInitialized = false;
+            _ = JS.InvokeVoidAsync("destroyUserDataTable", "#userDataTable");
         }
     }
 }

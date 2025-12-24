@@ -31,45 +31,25 @@
     <SettingTheme />
 </div>
 
-
 @code {
-    private bool isLoaderHidden = false; // Flag để tránh duplicate hide
+    private bool isLoaderHidden = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Hide loader sau mỗi render (global, cross-route)
         if (!isLoaderHidden)
         {
             try
             {
-                // Delay nhỏ để đảm bảo DOM ready
                 await Task.Delay(500);
-
-                // Gọi JS hideLoader nếu adminAssetManager tồn tại
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
-
-                // Fallback: Hide bằng CSS nếu JS fail
-                await JS.InvokeVoidAsync("eval",
-                    "$('.theme-loader').fadeOut('slow').addClass('d-none');");
-
+                await JS.InvokeVoidAsync("eval", "$('.theme-loader').fadeOut('slow').addClass('d-none');");
                 isLoaderHidden = true;
-                Console.WriteLine("Global loader hidden in MainLayout.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error hiding loader in MainLayout: {ex.Message}");
-                // Fallback CSS hide
-                await JS.InvokeVoidAsync("eval",
-                    "$('.theme-loader').hide();");
+                Console.WriteLine($"Error hiding loader: {ex.Message}");
+                await JS.InvokeVoidAsync("eval", "$('.theme-loader').hide();");
             }
         }
-
-        // Re-init theme plugins nếu cần (từ previous fix)
-        await JS.InvokeVoidAsync("initCustomPlugins");
-    }
-
-    public void Dispose()
-    {
-        // Cleanup nếu cần (e.g., event subscriptions)
     }
 }
