@@ -308,7 +308,7 @@ window.initDataTable = function (selector) {
     // Bind lần đầu
     window.bindAllRowEvents(selector);
 
-  
+
 };
 
 window.destroyDataTable = function (selector) {
