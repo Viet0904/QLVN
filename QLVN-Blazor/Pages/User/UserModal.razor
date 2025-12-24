@@ -27,7 +27,14 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Tên đăng nhập <span class="text-danger">*</span></label>
-                                <InputText @bind-Value="UserModel.UserName" class="form-control" placeholder="Nhập tên đăng nhập" disabled="@IsEditMode" />
+                                @if (IsEditMode)
+                                {
+                                    <InputText @bind-Value="UserModel.UserName" class="form-control" placeholder="Nhập tên đăng nhập" disabled />
+                                }
+                                else
+                                {
+                                    <InputText @bind-Value="UserModel.UserName" class="form-control" placeholder="Nhập tên đăng nhập" />
+                                }
                                 <ValidationMessage For="@(() => UserModel.UserName)" class="text-danger" />
                             </div>
                         </div>

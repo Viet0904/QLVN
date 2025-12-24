@@ -300,8 +300,15 @@ window.initDataTable = function (selector) {
             window.dataTableInstances[selector].columns.adjust();
         }
     });
+    // Bind action events cho tất cả rows sau khi DataTable init xong
+    table.on('draw', function () {
+        window.bindAllRowEvents(selector);
+    });
 
-    console.log('DataTable initialized:', selector);
+    // Bind lần đầu
+    window.bindAllRowEvents(selector);
+
+  
 };
 
 window.destroyDataTable = function (selector) {
@@ -1016,4 +1023,161 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
     });
 }
 
-// ... phần còn lại giữ nguyên
+
+
+
+// ==========================================
+// DATATABLE ROW MANIPULATION - LOCAL STATE
+// ==========================================
+
+/**
+ * Thêm row mới vào DataTable mà không reload
+ */
+window.dtAddRow = function (selector, rowData, userId) {
+    var table = window.dataTableInstances[selector];
+    if (!table) {
+        console.warn('DataTable not found:', selector);
+        return;
+    }
+
+    try {
+        // Thêm row mới
+        var newRow = table.row.add(rowData);
+
+        // Draw lại DataTable (chỉ phần cần thiết)
+        newRow.draw(false);
+
+        // Lấy node và set data attribute
+        var rowNode = newRow.node();
+        if (rowNode) {
+            $(rowNode).attr('data-user-id', userId);
+
+            // Highlight row mới
+            $(rowNode).addClass('row-added');
+            setTimeout(function () {
+                $(rowNode).removeClass('row-added');
+            }, 2000);
+
+            // Bind event cho action buttons
+            bindRowActionEvents(rowNode);
+        }
+
+        console.log('Row added successfully:', userId);
+    } catch (error) {
+        console.error('Error adding row:', error);
+    }
+};
+
+/**
+ * Cập nhật row trong DataTable mà không reload
+ */
+window.dtUpdateRow = function (selector, userId, rowData) {
+    var table = window.dataTableInstances[selector];
+    if (!table) {
+        console.warn('DataTable not found:', selector);
+        return;
+    }
+
+    try {
+        // Tìm row theo data-user-id
+        var rowNode = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+
+        if (rowNode.length > 0) {
+            var row = table.row(rowNode);
+
+            // Cập nhật data
+            row.data(rowData);
+
+            // Draw lại (chỉ row đó)
+            row.draw(false);
+
+            // Lấy lại node sau khi update
+            var updatedNode = row.node();
+            if (updatedNode) {
+                $(updatedNode).attr('data-user-id', userId);
+
+                // Highlight row đã update
+                $(updatedNode).addClass('row-updated');
+                setTimeout(function () {
+                    $(updatedNode).removeClass('row-updated');
+                }, 2000);
+
+                // Re-bind event cho action buttons
+                bindRowActionEvents(updatedNode);
+            }
+
+            console.log('Row updated successfully:', userId);
+        } else {
+            console.warn('Row not found for userId:', userId);
+        }
+    } catch (error) {
+        console.error('Error updating row:', error);
+    }
+};
+
+/**
+ * Xóa row khỏi DataTable mà không reload
+ */
+window.dtRemoveRow = function (selector, userId) {
+    var table = window.dataTableInstances[selector];
+    if (!table) {
+        console.warn('DataTable not found:', selector);
+        return;
+    }
+
+    try {
+        // Tìm row theo data-user-id
+        var rowNode = $(selector + ' tbody tr[data-user-id="' + userId + '"]');
+
+        if (rowNode.length > 0) {
+            // Thêm animation trước khi xóa
+            $(rowNode).addClass('row-removing');
+
+            setTimeout(function () {
+                var row = table.row(rowNode);
+                row.remove().draw(false);
+                console.log('Row removed successfully:', userId);
+            }, 300);
+        } else {
+            console.warn('Row not found for userId:', userId);
+        }
+    } catch (error) {
+        console.error('Error removing row:', error);
+    }
+};
+
+/**
+ * Bind event cho action buttons trong row
+ */
+function bindRowActionEvents(rowNode) {
+    if (!rowNode || !window.blazorInstance) return;
+
+    // Edit button
+    $(rowNode).find('.btn-edit-user').off('click').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var userId = $(this).data('user-id');
+        if (userId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString());
+        }
+    });
+
+    // Delete button
+    $(rowNode).find('.btn-delete-user').off('click').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var userId = $(this).data('user-id');
+        if (userId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString());
+        }
+    });
+}
+
+/**
+ * Bind events cho tất cả rows hiện có (gọi sau khi init DataTable)
+ */
+window.bindAllRowEvents = function (selector) {
+    $(selector + ' tbody tr').each(function () {
+        bindRowActionEvents(this);
+    });
+};

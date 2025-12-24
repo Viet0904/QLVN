@@ -184,10 +184,12 @@
         {
             layoutInitialized = true;
 
-            // Định nghĩa biến menu trước khi load pcoded.min.js
             await JS.InvokeVoidAsync("eval", @"
                 if (typeof menu === 'undefined') {
                     window.menu = {};
+                }
+                if (typeof vertical === 'undefined') {
+                    window.vertical = {};
                 }
                 var styleSelector = document.getElementById('styleSelector');
                 if (styleSelector) {
@@ -257,33 +259,112 @@
         allGroups = await UserService.GetAllGroupsAsync();
     }
 
+    #region Local State Update Methods
+
     /// <summary>
-    /// Reload toàn bộ trang để refresh data và DataTable
+    /// Thêm user mới vào local state và cập nhật DataTable (KHÔNG gọi StateHasChanged)
     /// </summary>
-    private async Task ReloadTableData()
+    private async Task AddUserToLocalState(UserDto newUser)
     {
-        try
-        {
-            // Destroy DataTable hiện tại
-            await DestroyDataTable();
+        if (allUsers == null) allUsers = new List<UserDto>();
 
-            // Load data mới
-            await LoadData();
-            
-            // Trigger UI update
-            StateHasChanged();
+        // Thêm vào đầu danh sách
+        allUsers.Insert(0, newUser);
 
-            // Đợi DOM render xong
-            await Task.Delay(200);
+        // Cập nhật DataTable qua JS - DataTable sẽ tự quản lý DOM
+        var rowData = BuildRowDataArray(newUser);
+        await JS.InvokeVoidAsync("dtAddRow", $"#{tableId}", rowData, newUser.Id);
 
-            // Reinit DataTable
-            await InitDataTable();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Reload table error: {ex.Message}");
-        }
+        // KHÔNG gọi StateHasChanged() - để tránh Blazor re-render DOM
     }
+
+    /// <summary>
+    /// Cập nhật user trong local state và DataTable (KHÔNG gọi StateHasChanged)
+    /// </summary>
+    private async Task UpdateUserInLocalState(UserDto updatedUser)
+    {
+        if (allUsers == null) return;
+
+        var index = allUsers.FindIndex(u => u.Id == updatedUser.Id);
+        if (index >= 0)
+        {
+            allUsers[index] = updatedUser;
+
+            // Cập nhật DataTable qua JS
+            var rowData = BuildRowDataArray(updatedUser);
+            await JS.InvokeVoidAsync("dtUpdateRow", $"#{tableId}", updatedUser.Id, rowData);
+        }
+
+        // KHÔNG gọi StateHasChanged()
+    }
+
+    /// <summary>
+    /// Xóa user khỏi local state và DataTable (KHÔNG gọi StateHasChanged)
+    /// </summary>
+    private async Task RemoveUserFromLocalState(string userId)
+    {
+        if (allUsers == null) return;
+
+        // Xóa khỏi local list TRƯỚC
+        allUsers.RemoveAll(u => u.Id == userId);
+
+        // Xóa row trong DataTable qua JS - DataTable sẽ tự quản lý DOM
+        await JS.InvokeVoidAsync("dtRemoveRow", $"#{tableId}", userId);
+
+        // KHÔNG gọi StateHasChanged() - Blazor sẽ không cố render lại row đã bị xóa
+    }
+
+    /// <summary>
+    /// Build mảng dữ liệu cho row DataTable
+    /// </summary>
+    private object[] BuildRowDataArray(UserDto user)
+    {
+        var genderHtml = user.Gender switch
+        {
+            1 => "<span class=\"badge bg-primary\">Nam</span>",
+            0 => "<span class=\"badge bg-info\">Nữ</span>",
+            _ => "<span class=\"badge bg-secondary\">Không xác định</span>"
+        };
+
+        var imageHtml = !string.IsNullOrEmpty(user.Image)
+            ? $"<img src=\"{user.Image}\" alt=\"Avatar\" style=\"width: 40px; height: 40px; border-radius: 50%;\" />"
+            : "<span class=\"text-muted\">-</span>";
+
+        var statusHtml = user.RowStatus == 1
+            ? "<span class=\"badge bg-success\">Hoạt động</span>"
+            : "<span class=\"badge bg-danger\">Ngừng hoạt động</span>";
+
+        var actionHtml = $@"
+            <button class=""btn btn-sm btn-warning me-1 btn-edit-user"" title=""Chỉnh sửa"" data-user-id=""{user.Id}"">
+                <i class=""feather icon-edit""></i>
+            </button>
+            <button class=""btn btn-sm btn-danger btn-delete-user"" title=""Xóa"" data-user-id=""{user.Id}"">
+                <i class=""feather icon-trash-2""></i>
+            </button>";
+
+        return new object[]
+        {
+            user.Id,
+            user.GroupId ?? "",
+            user.Name ?? "",
+            genderHtml,
+            user.UserName ?? "",
+            user.Email ?? "",
+            user.Phone ?? "",
+            user.Cmnd ?? "",
+            user.Address ?? "",
+            imageHtml,
+            user.Note ?? "",
+            statusHtml,
+            user.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+            user.CreatedBy ?? "",
+            user.UpdatedAt.ToString("dd/MM/yyyy HH:mm"),
+            user.UpdatedBy ?? "",
+            actionHtml
+        };
+    }
+
+    #endregion
 
     #region Modal Operations
 
@@ -319,6 +400,26 @@
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
     }
 
+    [JSInvokable("OpenEditModalById")]
+    public async Task OpenEditModalById(string userId)
+    {
+        var user = allUsers?.FirstOrDefault(u => u.Id == userId);
+        if (user != null)
+        {
+            await OpenEditModal(user);
+        }
+    }
+
+    [JSInvokable("OpenDeleteModalById")]
+    public async Task OpenDeleteModalById(string userId)
+    {
+        var user = allUsers?.FirstOrDefault(u => u.Id == userId);
+        if (user != null)
+        {
+            await OpenDeleteModal(user);
+        }
+    }
+
     private async Task OpenDeleteModal(UserDto user)
     {
         deleteUserId = user.Id;
@@ -332,15 +433,14 @@
     {
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
         await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
-        
-        // Reset form state
+
         userFormModel = new UserFormModel();
         password = string.Empty;
         confirmPassword = string.Empty;
         deleteUserId = string.Empty;
         deleteUserName = string.Empty;
         isProcessing = false;
-        
+
         StateHasChanged();
     }
 
@@ -351,7 +451,7 @@
     private async Task HandleSaveUser()
     {
         if (isProcessing) return;
-        
+
         isProcessing = true;
         StateHasChanged();
 
@@ -410,9 +510,19 @@
 
                 if (newUser != null)
                 {
-                    await CloseModals();
+                    // Đóng modal trước
+                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
+
+                    // Reset form state
+                    userFormModel = new UserFormModel();
+                    password = string.Empty;
+                    confirmPassword = string.Empty;
+                    isProcessing = false;
+
                     await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
-                    await ReloadTableData();
+
+                    // Local state update - KHÔNG gọi StateHasChanged sau đây
+                    await AddUserToLocalState(newUser);
                 }
                 else
                 {
@@ -440,9 +550,17 @@
 
                 if (updatedUser != null)
                 {
-                    await CloseModals();
+                    // Đóng modal trước
+                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
+
+                    // Reset form state
+                    userFormModel = new UserFormModel();
+                    isProcessing = false;
+
                     await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
-                    await ReloadTableData();
+
+                    // Local state update
+                    await UpdateUserInLocalState(updatedUser);
                 }
                 else
                 {
@@ -457,6 +575,7 @@
         finally
         {
             isProcessing = false;
+            // Chỉ StateHasChanged cho modal state, không ảnh hưởng table
             StateHasChanged();
         }
     }
@@ -469,23 +588,25 @@
         StateHasChanged();
 
         var nameToDelete = deleteUserName;
+        var idToDelete = deleteUserId;
 
         try
         {
-            // Đóng modal trước
+            // Đóng modal TRƯỚC khi xóa
             await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
-            await Task.Delay(300);
 
-            var result = await UserService.DeleteUserAsync(deleteUserId);
-
-            // Reset state
+            // Reset state ngay
             deleteUserId = string.Empty;
             deleteUserName = string.Empty;
+
+            var result = await UserService.DeleteUserAsync(idToDelete);
 
             if (result)
             {
                 await ShowNotification("success", $"Xóa người dùng '{nameToDelete}' thành công!");
-                await ReloadTableData();
+
+                // Xóa khỏi local state - KHÔNG gọi StateHasChanged
+                await RemoveUserFromLocalState(idToDelete);
             }
             else
             {
@@ -499,9 +620,7 @@
         finally
         {
             isProcessing = false;
-            deleteUserId = string.Empty;
-            deleteUserName = string.Empty;
-            StateHasChanged();
+            // KHÔNG gọi StateHasChanged() ở đây để tránh Blazor re-render table
         }
     }
 
