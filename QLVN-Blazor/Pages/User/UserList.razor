@@ -68,7 +68,7 @@
                             <tbody>
                                 @foreach (var user in allUsers)
                                 {
-                                    <tr data-user-id="@user.Id">
+                                    <tr data-user-id="@user.Id" @key="user.Id">
                                         <td>@user.Id</td>
                                         <td>@user.GroupId</td>
                                         <td>@user.Name</td>
@@ -201,7 +201,6 @@
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/pcoded.min.js');");
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/vartical-layout.min.js');");
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/script.js');");
-            await Task.Delay(300);
 
             if (!dataTableInitialized)
             {
@@ -209,6 +208,9 @@
                 dataTableInitialized = true;
                 await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
             }
+            // ✅ Tắt loader SAU KHI hoàn tất
+            await Task.Delay(300); // Đợi DataTable render
+            await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
         }
     }
 

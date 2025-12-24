@@ -413,6 +413,9 @@
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+
+                // Tắt loader sau khi init xong
+                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
             }
             catch (Exception ex)
             {
