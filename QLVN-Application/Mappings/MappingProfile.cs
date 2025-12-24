@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using QLVN_Contracts.Dtos.Dvsd;
+using QLVN_Contracts.Dtos.Group;
 using QLVN_Contracts.Dtos.User;
 using QLVN_Domain.Entities;
 
@@ -15,6 +16,9 @@ namespace QLVN_Application.Mappings
 
             CreateMap<UsUser, UserDto>().ReverseMap();
             CreateMap<CreateUserRequest, UsUser>();
+
+            CreateMap<UsGroup, GroupDto>().ReverseMap();
+            CreateMap<UsGroup, GroupDto>();
         }
     }
 }

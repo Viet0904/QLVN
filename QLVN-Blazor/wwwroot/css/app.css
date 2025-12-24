@@ -101,3 +101,27 @@ a, .btn-link {
 code {
     color: #c02d76;
 }
+
+
+
+/* Notification ph?i n?m trên Modal */
+.custom-notification,
+[class*="growl"],
+.alert.growl-animated {
+    z-index: 99999 !important;
+}
+
+/* Bootstrap growl container */
+.bootstrap-growl {
+    z-index: 99999 !important;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* Modal */
+.modal {
+    z-index: 1050 !important;
+}

@@ -30,7 +30,7 @@ window.notificationManager = {
         };
 
         const notificationType = typeMap[type] || typeMap['info'];
-        
+
         // Cấu hình vị trí
         const allowDismiss = true;
         const placement = {
@@ -50,7 +50,7 @@ window.notificationManager = {
             }, {
                 type: notificationType.bootstrapGrowlType,
                 placement: placement,
-                offset: { x: 20, y: 20 },
+                offset: { x: 20, y: 85 },
                 allow_dismiss: allowDismiss,
                 delay: delay,
                 animate: {
@@ -64,57 +64,83 @@ window.notificationManager = {
         }
     },
 
+    // Shorthand methods cho Blazor gọi trực tiếp
+    success: function (message, delay) {
+        this.show(message, 'success', 'top', 'right', delay || 3000, 'feather icon-check-circle');
+    },
+
+    error: function (message, delay) {
+        this.show(message, 'danger', 'top', 'right', delay || 5000, 'feather icon-x-circle');
+    },
+
+    warning: function (message, delay) {
+        this.show(message, 'warning', 'top', 'right', delay || 4000, 'feather icon-alert-triangle');
+    },
+
+    info: function (message, delay) {
+        this.show(message, 'info', 'top', 'right', delay || 3000, 'feather icon-info');
+    },
+
     showFallback: function (message, type, position, align, delay, icon) {
         // Fallback khi bootstrap-growl không sẵn có
         const typeMap = {
-            'success': { bg: '#dff0d8', border: '#d0c743', color: '#3c763d' },
-            'danger': { bg: '#f2dede', border: '#ebccd1', color: '#a94442' },
-            'warning': { bg: '#fcf8e3', border: '#faebcc', color: '#8a6d3b' },
-            'info': { bg: '#d9edf7', border: '#bce8f1', color: '#31708f' },
-            'primary': { bg: '#d1ecf1', border: '#bee5eb', color: '#0c5460' },
-            'inverse': { bg: '#f5f5f5', border: '#ddd', color: '#333' }
+            'success': { bg: '#dff0d8', border: '#3c763d', color: '#3c763d', iconColor: '#3c763d' },
+            'danger': { bg: '#f2dede', border: '#a94442', color: '#a94442', iconColor: '#a94442' },
+            'warning': { bg: '#fcf8e3', border: '#8a6d3b', color: '#8a6d3b', iconColor: '#8a6d3b' },
+            'info': { bg: '#d9edf7', border: '#31708f', color: '#31708f', iconColor: '#31708f' },
+            'primary': { bg: '#d1ecf1', border: '#0c5460', color: '#0c5460', iconColor: '#0c5460' },
+            'inverse': { bg: '#f5f5f5', border: '#333', color: '#333', iconColor: '#333' }
         };
 
         const colors = typeMap[type] || typeMap['info'];
         const notificationId = 'notification-' + Date.now();
-        
+
         // Xác định vị trí CSS
         const positionY = position === 'bottom' ? 'bottom' : 'top';
-        const positionX = align === 'left' ? 'left' : (align === 'center' ? 'left: 50%; transform: translateX(-50%);' : 'right');
+        let positionXStyle = '';
+        if (align === 'left') {
+            positionXStyle = 'left: 20px;';
+        } else if (align === 'center') {
+            positionXStyle = 'left: 50%; transform: translateX(-50%);';
+        } else {
+            positionXStyle = 'right: 20px;';
+        }
 
         // Tạo HTML
-        const iconHtml = icon ? `<i class="${icon}" style="margin-right: 10px;"></i>` : '';
+        const iconHtml = icon ? `<i class="${icon}" style="margin-right: 12px; font-size: 18px;"></i>` : '';
         const notificationHtml = `
-            <div id="${notificationId}" style="
+            <div id="${notificationId}" class="custom-notification custom-notification-${type}" style="
                 position: fixed;
                 ${positionY}: 20px;
-                ${typeof positionX === 'string' && positionX.includes('transform') ? positionX : (positionX + ': 20px;')}
-                min-width: 300px;
-                max-width: 500px;
-                padding: 15px 20px;
+                ${positionXStyle}
+                min-width: 320px;
+                max-width: 450px;
+                padding: 16px 20px;
                 background-color: ${colors.bg};
                 border-left: 4px solid ${colors.border};
                 color: ${colors.color};
-                border-radius: 4px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                z-index: 9999;
+                border-radius: 6px;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+                z-index: 99999;
                 animation: slideInRight 0.3s ease-out;
                 display: flex;
                 align-items: center;
                 font-size: 14px;
                 line-height: 1.5;
+                font-weight: 500;
             ">
-                <span style="flex: 1;">${iconHtml}${message}</span>
+                <span style="flex: 1; display: flex; align-items: center;">${iconHtml}${message}</span>
                 <button type="button" style="
                     background: none;
                     border: none;
                     color: ${colors.color};
                     cursor: pointer;
-                    font-size: 18px;
+                    font-size: 20px;
                     padding: 0;
-                    margin-left: 10px;
+                    margin-left: 12px;
                     opacity: 0.7;
                     transition: opacity 0.2s;
+                    line-height: 1;
                 " onclick="document.getElementById('${notificationId}').remove();" 
                 onmouseover="this.style.opacity='1'" 
                 onmouseout="this.style.opacity='0.7'">
@@ -130,7 +156,7 @@ window.notificationManager = {
             style.textContent = `
                 @keyframes slideInRight {
                     from {
-                        transform: translateX(400px);
+                        transform: translateX(120%);
                         opacity: 0;
                     }
                     to {
@@ -145,7 +171,7 @@ window.notificationManager = {
                         opacity: 1;
                     }
                     to {
-                        transform: translateX(400px);
+                        transform: translateX(120%);
                         opacity: 0;
                     }
                 }
@@ -153,28 +179,29 @@ window.notificationManager = {
                 .notification-exit {
                     animation: slideOutRight 0.3s ease-out forwards !important;
                 }
+
+                .custom-notification {
+                    font-family: 'Open Sans', sans-serif;
+                }
             `;
             document.head.appendChild(style);
         }
 
-        // Tạo container nếu chưa có
-        let container = document.querySelector('#notification-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'notification-container';
-            document.body.appendChild(container);
-        }
-
-        // Thêm notification
-        container.insertAdjacentHTML('beforeend', notificationHtml);
+        // Thêm notification vào body
+        document.body.insertAdjacentHTML('beforeend', notificationHtml);
         const notificationEl = document.getElementById(notificationId);
 
         // Tự động xóa sau delay
         setTimeout(() => {
-            notificationEl.classList.add('notification-exit');
-            setTimeout(() => {
-                notificationEl.remove();
-            }, 300);
-        }, delay);
+            if (notificationEl) {
+                notificationEl.classList.add('notification-exit');
+                setTimeout(() => {
+                    if (notificationEl && notificationEl.parentNode) {
+                        notificationEl.remove();
+                    }
+                }, 300);
+            }
+        }, delay || 3000);
     }
 };
+

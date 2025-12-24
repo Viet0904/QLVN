@@ -10,133 +10,187 @@ using Microsoft.IdentityModel.Tokens;
 using QLVN_Contracts.Dtos.Auth;
 using Microsoft.Extensions.Configuration;
 
-namespace QLVN_Application.Services
+namespace QLVN_Application.Services;
+
+public class UserService : IUserService
 {
-    public class UserService : IUserService
+    private readonly IConfiguration _config;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private static readonly object _lockObject = new object();
+
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config)
     {
-        private readonly IConfiguration _config;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
+        _config = config;
+    }
 
-        public UserService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config)
+    public async Task<IEnumerable<UserDto>> GetAllAsync()
+    {
+        var users = await _unitOfWork.Repository<UsUser>().GetAllAsync();
+        var activeUsers = users.Where(u => u.RowStatus == 1).OrderBy(u => u.Id);
+        return _mapper.Map<IEnumerable<UserDto>>(activeUsers);
+    }
+
+    public async Task<UserDto?> GetByIdAsync(string id)
+    {
+        var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
+        return user == null ? null : _mapper.Map<UserDto>(user);
+    }
+
+    public async Task<UserDto> CreateAsync(CreateUserRequest request)
+    {
+        // Kiểm tra username đã tồn tại chưa
+        var allUsers = await _unitOfWork.Repository<UsUser>().GetAllAsync();
+        var existingUser = allUsers.FirstOrDefault(u =>
+            u.UserName.Equals(request.UserName, StringComparison.OrdinalIgnoreCase));
+
+        if (existingUser != null)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _config = config;
+            throw new InvalidOperationException($"Tên đăng nhập '{request.UserName}' đã tồn tại!");
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllAsync()
-        {
-            var users = await _unitOfWork.Repository<UsUser>().GetAllAsync();
-            return _mapper.Map<IEnumerable<UserDto>>(users);
-        }
+        // Tạo ID mới
+        var newId = await GenerateNextUserIdAsync();
 
-        public async Task<UserDto?> GetByIdAsync(string id)
-        {
-            var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
-            return _mapper.Map<UserDto>(user);
-        }
+        var userEntity = _mapper.Map<UsUser>(request);
+        userEntity.Id = newId;
+        userEntity.CreatedAt = DateTime.Now;
+        userEntity.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        userEntity.CreatedBy = "SYSTEM";
+        userEntity.UpdatedAt = DateTime.Now;
+        userEntity.UpdatedBy = "SYSTEM";
+        userEntity.RowStatus = request.RowStatus > 0 ? request.RowStatus : 1;
 
-        public async Task CreateAsync(CreateUserRequest request)
-        {
-            var userEntity = _mapper.Map<UsUser>(request);
-            userEntity.Id = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
-            userEntity.CreatedAt = DateTime.Now;
-            userEntity.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            userEntity.CreatedBy = "SYSTEM";
-            userEntity.UpdatedAt = DateTime.Now; // Khởi tạo UpdatedAt
-            userEntity.UpdatedBy = "SYSTEM";
-            userEntity.RowStatus = 1;
+        await _unitOfWork.Repository<UsUser>().AddAsync(userEntity);
+        await _unitOfWork.SaveChangesAsync();
 
-            await _unitOfWork.Repository<UsUser>().AddAsync(userEntity);
-            await _unitOfWork.SaveChangesAsync();
-        }
+        return _mapper.Map<UserDto>(userEntity);
+    }
 
-        public async Task UpdateAsync(string id, UpdateUserRequest request)
-        {
-            var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
-            if (user == null) throw new Exception("Không tìm thấy người dùng");
+    public async Task<UserDto> UpdateAsync(string id, UpdateUserRequest request)
+    {
+        var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
+        if (user == null)
+            throw new KeyNotFoundException($"Không tìm thấy người dùng với ID: {id}");
 
-            // Xử lý cảnh báo CS8601: Kiểm tra null trước khi gán cho thuộc tính không được null
-            user.Name = request.Name ?? user.Name;
-            user.GroupId = request.GroupId ?? user.GroupId;
-            user.Email = request.Email;
-            user.Phone = request.Phone;
-            user.Address = request.Address;
-            user.Cmnd = request.CMND;
-            user.Note = request.Note;
-            user.Image = request.Image;
+        // Cập nhật các trường
+        user.Name = !string.IsNullOrEmpty(request.Name) ? request.Name : user.Name;
+        user.GroupId = !string.IsNullOrEmpty(request.GroupId) ? request.GroupId : user.GroupId;
+        user.Email = request.Email;
+        user.Phone = request.Phone;
+        user.Address = request.Address;
+        user.Cmnd = request.Cmnd;
+        user.Note = request.Note;
+        user.Image = request.Image;
+        user.Gender = request.Gender;
+        user.RowStatus = request.RowStatus;
+        user.UpdatedAt = DateTime.Now;
+        user.UpdatedBy = "SYSTEM";
 
-            // Xử lý lỗi CS0266: Ép kiểu hoặc cung cấp giá trị mặc định cho int? -> int
-            user.RowStatus = request.RowStatus ?? user.RowStatus;
+        _unitOfWork.Repository<UsUser>().Update(user);
+        await _unitOfWork.SaveChangesAsync();
 
-            // Chuyển đổi Gender từ string (DTO) sang int? (Entity)
-            if (int.TryParse(request.Gender, out int genderVal))
+        return _mapper.Map<UserDto>(user);
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
+        if (user == null)
+            throw new KeyNotFoundException($"Không tìm thấy người dùng với ID: {id}");
+
+        // Soft delete - set RowStatus = 0
+        user.RowStatus = 0;
+        user.UpdatedAt = DateTime.Now;
+        user.UpdatedBy = "SYSTEM";
+
+        _unitOfWork.Repository<UsUser>().Update(user);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Tạo ID người dùng mới
+    /// Lấy MAX ID hiện có + 1
+    /// </summary>
+    private async Task<string> GenerateNextUserIdAsync()
+    {
+        var allUsers = await _unitOfWork.Repository<UsUser>().GetAllAsync();
+
+        // Lọc các ID có format 001XXXXX (8 ký tự, bắt đầu bằng 001)
+        var userIds = allUsers
+            .Where(u => u.Id.Length == 8 && u.Id.StartsWith("001"))
+            .Select(u =>
             {
-                user.Gender = genderVal;
-            }
+                if (int.TryParse(u.Id, out int idNum))
+                    return idNum;
+                return 0;
+            })
+            .Where(id => id > 0)
+            .ToList();
 
-            user.UpdatedAt = DateTime.Now;
-            user.UpdatedBy = "SYSTEM"; 
-
-            _unitOfWork.Repository<UsUser>().Update(user);
-            await _unitOfWork.SaveChangesAsync(); // Thêm await để sửa cảnh báo CS1998
-        }
-
-        public async Task DeleteAsync(string id)
+        int nextNumber;
+        if (userIds.Any())
         {
-            var user = await _unitOfWork.Repository<UsUser>().GetByIdAsync(id);
-            if (user != null)
-            {
-                _unitOfWork.Repository<UsUser>().Delete(user);
-                await _unitOfWork.SaveChangesAsync();
-            }
+            var maxId = userIds.Max();
+            nextNumber = maxId + 1;
         }
-
-        public async Task<LoginResponse> LoginAsync(LoginRequest request)
+        else
         {
-            var users = await _unitOfWork.Repository<UsUser>().GetAllAsync();
-            var user = users.FirstOrDefault(x => x.UserName == request.UserName);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
-            {
-                throw new Exception("Tài khoản hoặc mật khẩu không chính xác");
-            }
-
-            var token = GenerateJwtToken(user);
-
-            return new LoginResponse
-            {
-                Token = token,
-                FullName = user.Name
-            };
+            // Bắt đầu từ 00100001
+            nextNumber = 100001;
         }
 
-        private string GenerateJwtToken(UsUser user)
+        // Format thành 8 ký tự: 00100001, 00100002, ...
+        return nextNumber.ToString("D8");
+    }
+
+    public async Task<LoginResponse> LoginAsync(LoginRequest request)
+    {
+        var users = await _unitOfWork.Repository<UsUser>().GetAllAsync();
+        var user = users.FirstOrDefault(x => x.UserName == request.UserName && x.RowStatus == 1);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
         {
-            var jwtSettings = _config.GetSection("JwtSettings");
-            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim("FullName", user.Name),
-                new Claim("GroupId", user.GroupId)
-            };
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(8),
-                Issuer = jwtSettings["Issuer"],
-                Audience = jwtSettings["Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            throw new UnauthorizedAccessException("Tài khoản hoặc mật khẩu không chính xác");
         }
+
+        var token = GenerateJwtToken(user);
+
+        return new LoginResponse
+        {
+            Token = token,
+            FullName = user.Name
+        };
+    }
+
+    private string GenerateJwtToken(UsUser user)
+    {
+        var jwtSettings = _config.GetSection("JwtSettings");
+        var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Name, user.UserName),
+            new("FullName", user.Name),
+            new("GroupId", user.GroupId)
+        };
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddHours(8),
+            Issuer = jwtSettings["Issuer"],
+            Audience = jwtSettings["Audience"],
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 }

@@ -66,6 +66,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IThemeService, ThemeService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
 // 3. Đăng ký Application Services
 builder.Services.AddScoped<DvsdService, DvsdService>();
 

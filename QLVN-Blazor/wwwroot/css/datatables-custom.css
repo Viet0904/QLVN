@@ -607,3 +607,197 @@ table.dataTable tbody tr.selected {
     display: flex;
     align-items: center;
 }
+
+
+
+/* Row highlight animations */
+.row-highlight-new {
+    animation: highlightNew 2s ease-out;
+}
+
+.row-highlight-update {
+    animation: highlightUpdate 2s ease-out;
+}
+
+.row-highlight-delete {
+    animation: highlightDelete 0.3s ease-out;
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+@keyframes highlightNew {
+    0% {
+        background-color: #d4edda !important;
+        transform: scale(1.02);
+    }
+
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+@keyframes highlightUpdate {
+    0% {
+        background-color: #fff3cd !important;
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+@keyframes highlightDelete {
+    0% {
+        background-color: #f8d7da !important;
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        background-color: #f8d7da !important;
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}
+
+/* Modal styles */
+.modal-header.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+    .modal-header.bg-danger .close {
+        color: white;
+        opacity: 1;
+    }
+
+/* Spinner in button */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+/* Form validation */
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.text-danger {
+    font-size: 0.875em;
+}
+
+
+
+/* Thêm vào cuối file */
+
+/* Button Thêm Mới trong toolbar */
+.dt-add-new-btn {
+    margin-left: 15px;
+    padding: 6px 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+    .dt-add-new-btn i {
+        font-size: 14px;
+    }
+
+/* Cập nhật toolbar right để căn chỉnh */
+.dt-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Delete Modal - Larger size */
+#deleteUserModal .modal-dialog {
+    max-width: 420px;
+}
+
+#deleteUserModal .modal-body {
+    padding: 30px 25px;
+}
+
+    #deleteUserModal .modal-body i.feather.icon-trash-2 {
+        font-size: 64px !important;
+        margin-bottom: 10px;
+    }
+
+    #deleteUserModal .modal-body p {
+        font-size: 15px;
+    }
+
+    #deleteUserModal .modal-body .font-weight-bold {
+        font-size: 18px;
+        color: #333;
+        margin: 10px 0;
+    }
+
+    #deleteUserModal .modal-body .text-muted {
+        font-size: 13px;
+    }
+
+#deleteUserModal .modal-footer {
+    padding: 15px 25px 25px;
+    gap: 10px;
+}
+
+    #deleteUserModal .modal-footer .btn {
+        min-width: 100px;
+        padding: 8px 20px;
+    }
+
+/* Row highlight animations */
+.row-highlight-new {
+    animation: highlightNew 2s ease-out;
+}
+
+.row-highlight-update {
+    animation: highlightUpdate 2s ease-out;
+}
+
+.row-highlight-delete {
+    animation: highlightDelete 0.3s ease-out;
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+@keyframes highlightNew {
+    0% {
+        background-color: #d4edda !important;
+        transform: scale(1.01);
+    }
+
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+@keyframes highlightUpdate {
+    0% {
+        background-color: #fff3cd !important;
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+@keyframes highlightDelete {
+    0% {
+        background-color: #f8d7da !important;
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        background-color: #f8d7da !important;
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}

@@ -671,7 +671,7 @@ window.initUserDataTable = function (selector) {
     console.log('User DataTable with Column Visibility initialized:', selector);
 };
 
-// Tạo custom toolbar với layout đẹp
+// Tạo custom toolbar với layout đẹp - CÓ NÚT THÊM MỚI
 function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
     var toolbarHtml = `
         <div class="dt-custom-toolbar">
@@ -706,6 +706,9 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
                     <label>Tìm kiếm:</label>
                     <input type="search" class="form-control form-control-sm dt-custom-search" placeholder="Nhập từ khóa...">
                 </div>
+                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser">
+                    <i class="feather icon-plus"></i> Thêm Mới
+                </button>
             </div>
         </div>
     `;
@@ -792,3 +795,225 @@ window.reinitUserDataTable = function (selector) {
     window.destroyUserDataTable(selector);
     window.initUserDataTable(selector);
 };
+
+
+
+
+
+
+// ==========================================
+// ROW MANIPULATION FUNCTIONS
+// ==========================================
+window.addUserRow = function (selector, rowHtml) {
+    if (window.dataTableInstances[selector]) {
+        var table = window.dataTableInstances[selector];
+
+        // Tạo row mới từ HTML
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = '<table><tbody><tr>' + rowHtml + '</tr></tbody></table>';
+        var newRowData = [];
+        var cells = tempDiv.querySelectorAll('td');
+        cells.forEach(function (cell) {
+            newRowData.push(cell.innerHTML);
+        });
+
+        // Thêm row vào DataTable
+        var newRow = table.row.add(newRowData).draw(false);
+
+        // Lấy node và set data-user-id
+        var rowNode = newRow.node();
+        var userId = cells[0].textContent; // Id nằm ở cột đầu tiên
+        $(rowNode).attr('data-user-id', userId);
+        $(rowNode).attr('id', 'user-row-' + userId);
+
+        // Highlight row mới
+        $(rowNode).addClass('row-highlight-new');
+        setTimeout(function () {
+            $(rowNode).removeClass('row-highlight-new');
+        }, 2000);
+
+        console.log('Added new row for user:', userId);
+    }
+};
+
+window.updateUserRow = function (selector, userId, rowHtml) {
+    if (window.dataTableInstances[selector]) {
+        var table = window.dataTableInstances[selector];
+
+        // Tìm row theo data-user-id
+        var rowNode = $('tr[data-user-id="' + userId + '"]');
+
+        if (rowNode.length > 0) {
+            // Lấy DataTable row object
+            var row = table.row(rowNode);
+
+            // Parse HTML mới
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = '<table><tbody><tr>' + rowHtml + '</tr></tbody></table>';
+            var newRowData = [];
+            var cells = tempDiv.querySelectorAll('td');
+            cells.forEach(function (cell) {
+                newRowData.push(cell.innerHTML);
+            });
+
+            // Cập nhật dữ liệu row
+            row.data(newRowData).draw(false);
+
+            // Lấy lại node sau khi update và set lại attributes
+            var updatedNode = row.node();
+            $(updatedNode).attr('data-user-id', userId);
+            $(updatedNode).attr('id', 'user-row-' + userId);
+
+            // Highlight row đã update
+            $(updatedNode).addClass('row-highlight-update');
+            setTimeout(function () {
+                $(updatedNode).removeClass('row-highlight-update');
+            }, 2000);
+
+            console.log('Updated row for user:', userId);
+        } else {
+            console.warn('Row not found for user:', userId);
+        }
+    }
+};
+
+window.removeUserRow = function (selector, userId) {
+    if (window.dataTableInstances[selector]) {
+        var table = window.dataTableInstances[selector];
+
+        // Tìm row theo data-user-id
+        var rowNode = $('tr[data-user-id="' + userId + '"]');
+
+        if (rowNode.length > 0) {
+            // Thêm animation trước khi xóa
+            $(rowNode).addClass('row-highlight-delete');
+
+            setTimeout(function () {
+                // Xóa row khỏi DataTable
+                table.row(rowNode).remove().draw(false);
+                console.log('Removed row for user:', userId);
+            }, 300);
+        } else {
+            console.warn('Row not found for user:', userId);
+        }
+    }
+};
+
+
+
+// Thêm vào đầu file, sau các biến global
+window.blazorInstance = null;
+
+window.registerBlazorInstance = function (instance) {
+    window.blazorInstance = instance;
+    console.log('Blazor instance registered');
+};
+
+// Sửa function createCustomToolbar - thêm event cho nút Thêm Mới
+function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
+    var toolbarHtml = `
+        <div class="dt-custom-toolbar">
+            <div class="dt-toolbar-left">
+                <div class="colvis-wrapper">
+                    <button type="button" class="btn btn-secondary btn-sm colvis-btn-custom">
+                        <i class="feather icon-columns"></i> Cột Hiển Thị
+                        <i class="feather icon-chevron-down ms-1"></i>
+                    </button>
+                    <div class="colvis-dropdown-custom">
+                        <div class="colvis-item colvis-show-all">
+                            <i class="feather icon-eye"></i>
+                            <span>Hiện tất cả</span>
+                        </div>
+                        <div class="colvis-divider"></div>
+                        <div class="colvis-columns-list"></div>
+                    </div>
+                </div>
+                <div class="dt-length-wrapper">
+                    <select class="form-select form-select-sm dt-page-length">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="-1">Tất cả</option>
+                    </select>
+                    <span>bản ghi</span>
+                </div>
+            </div>
+            <div class="dt-toolbar-right">
+                <div class="dt-search-wrapper">
+                    <label>Tìm kiếm:</label>
+                    <input type="search" class="form-control form-control-sm dt-custom-search" placeholder="Nhập từ khóa...">
+                </div>
+                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser">
+                    <i class="feather icon-plus"></i> Thêm Mới
+                </button>
+            </div>
+        </div>
+    `;
+
+    wrapper.prepend(toolbarHtml);
+
+    // Tạo danh sách các cột cho column visibility
+    var columnsList = wrapper.find('.colvis-columns-list');
+    for (var i = 0; i < totalColumns - 1; i++) {
+        var isVisible = api.column(i).visible();
+        var itemHtml = `
+            <div class="colvis-item colvis-column-toggle" data-column="${i}">
+                <span class="colvis-check">${isVisible ? '✓' : ''}</span>
+                <span class="colvis-name">${columnNames[i]}</span>
+            </div>
+        `;
+        columnsList.append(itemHtml);
+    }
+
+    // Toggle column visibility dropdown
+    wrapper.find('.colvis-btn-custom').on('click', function (e) {
+        e.stopPropagation();
+        $('.dt-column-dropdown').removeClass('show');
+        wrapper.find('.colvis-dropdown-custom').toggleClass('show');
+    });
+
+    // Toggle visibility cho từng cột
+    wrapper.find('.colvis-column-toggle').on('click', function (e) {
+        e.stopPropagation();
+        var colIdx = $(this).data('column');
+        var column = api.column(colIdx);
+        var currentVisibility = column.visible();
+        column.visible(!currentVisibility);
+        $(this).find('.colvis-check').text(!currentVisibility ? '✓' : '');
+    });
+
+    // Hiện tất cả cột
+    wrapper.find('.colvis-show-all').on('click', function (e) {
+        e.stopPropagation();
+        for (var i = 0; i < totalColumns - 1; i++) {
+            api.column(i).visible(true);
+        }
+        wrapper.find('.colvis-column-toggle .colvis-check').text('✓');
+    });
+
+    // Page length change
+    wrapper.find('.dt-page-length').on('change', function () {
+        var val = $(this).val();
+        api.page.len(parseInt(val)).draw();
+    });
+
+    // Custom search
+    wrapper.find('.dt-custom-search').on('keyup', function () {
+        api.search(this.value).draw();
+    });
+
+    // Nút Thêm Mới - gọi Blazor method
+    wrapper.find('#btnAddNewUser').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('OpenAddModal');
+        } else {
+            console.error('Blazor instance not registered');
+        }
+    });
+}
+
+// ... phần còn lại giữ nguyên

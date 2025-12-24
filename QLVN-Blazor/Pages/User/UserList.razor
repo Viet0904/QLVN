@@ -1,6 +1,8 @@
 ﻿@page "/users"
 @using QLVN_Contracts.Dtos.User
+@using QLVN_Contracts.Dtos.Group
 @using QLVN_Blazor.Services
+@using QLVN_Blazor.Models
 @using Microsoft.AspNetCore.Components.Forms
 @inject AuthenticationStateProvider AuthStateProvider
 @using Microsoft.AspNetCore.Components.Authorization
@@ -9,14 +11,13 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5>Danh sách người dùng</h5>
                 <div class="card-header-right">
-                    <ul class="list-unstyled card-option">
+                    <ul class="list-unstyled card-option d-inline-block mb-0">
                         <li><i class="feather icon-maximize full-card"></i></li>
                         <li><i class="feather icon-minus minimize-card"></i></li>
                     </ul>
@@ -42,7 +43,7 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table id="userDataTable" class="table table-striped table-hover table-bordered" style="width:100%">
+                        <table id="@tableId" class="table table-striped table-hover table-bordered" style="width:100%">
                             <thead class="table-light">
                                 <tr>
                                     <th>Id</th>
@@ -116,10 +117,12 @@
                                         <td>@user.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                                         <td>@user.UpdatedBy</td>
                                         <td>
-                                            <button class="btn btn-sm btn-warning me-1" title="Chỉnh sửa">
+                                            <button class="btn btn-sm btn-warning me-1" title="Chỉnh sửa"
+                                                    @onclick="() => OpenEditModal(user)">
                                                 <i class="feather icon-edit"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-danger" title="Xóa">
+                                            <button class="btn btn-sm btn-danger" title="Xóa"
+                                                    @onclick="() => OpenDeleteModal(user)">
                                                 <i class="feather icon-trash-2"></i>
                                             </button>
                                         </td>
@@ -134,67 +137,412 @@
     </div>
 </div>
 
+<!-- User Modal Component -->
+<UserModal UserModel="userFormModel"
+           IsEditMode="isEditMode"
+           IsProcessing="isProcessing"
+           DeleteUserId="deleteUserId"
+           DeleteUserName="@deleteUserName"
+           Password="@password"
+           PasswordChanged="@((value) => password = value)"
+           ConfirmPassword="@confirmPassword"
+           ConfirmPasswordChanged="@((value) => confirmPassword = value)"
+           Groups="allGroups"
+           OnSubmit="HandleSaveUser"
+           OnDelete="HandleDeleteUser"
+           OnClose="CloseModals" />
 
 @code {
     private List<UserDto>? allUsers;
+    private List<GroupDto> allGroups = new();
     private bool isLoading = true;
     private bool dataTableInitialized = false;
     private bool layoutInitialized = false;
+    private DotNetObjectReference<UserList>? objRef;
+    private string tableId = "userDataTable";
+
+    // Modal states
+    private UserFormModel userFormModel = new();
+    private bool isEditMode = false;
+    private bool isProcessing = false;
+    private string deleteUserId = string.Empty;
+    private string deleteUserName = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        objRef = DotNetObjectReference.Create(this);
         await LoadData();
+        await LoadGroups();
         isLoading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-
         if (allUsers?.Any() == true && !layoutInitialized)
         {
             layoutInitialized = true;
 
-            // 1. Đóng sidebar customizer (BỎ visibility = hidden)
+            // Định nghĩa biến menu trước khi load pcoded.min.js
             await JS.InvokeVoidAsync("eval", @"
+                if (typeof menu === 'undefined') {
+                    window.menu = {};
+                }
                 var styleSelector = document.getElementById('styleSelector');
                 if (styleSelector) {
                     styleSelector.classList.remove('open');
                 }
             ");
 
-            // 2. Re-load các script layout chính của Adminty
+            await Task.Delay(100);
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/pcoded.min.js');");
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/vartical-layout.min.js');");
             await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/script.js');");
-
-            // 3. Đợi layout re-init xong rồi mới init DataTables
             await Task.Delay(300);
 
             if (!dataTableInitialized)
             {
                 await JS.InvokeVoidAsync("initUserDataTable", "#userDataTable");
                 dataTableInitialized = true;
+                await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
             }
         }
+    }
+
+    private async Task InitDataTable()
+    {
+        if (dataTableInitialized) return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("initUserDataTable", $"#{tableId}");
+            dataTableInitialized = true;
+            await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DataTable init error: {ex.Message}");
+        }
+    }
+
+    private async Task DestroyDataTable()
+    {
+        if (!dataTableInitialized) return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("destroyUserDataTable", $"#{tableId}");
+            dataTableInitialized = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DataTable destroy error: {ex.Message}");
+        }
+    }
+
+    [JSInvokable("OpenAddModal")]
+    public async Task OpenAddModalFromJS()
+    {
+        await OpenAddModal();
     }
 
     private async Task LoadData()
     {
         allUsers = await UserService.GetUserAllSync();
+    }
 
-        if (dataTableInitialized)
+    private async Task LoadGroups()
+    {
+        allGroups = await UserService.GetAllGroupsAsync();
+    }
+
+    /// <summary>
+    /// Reload toàn bộ trang để refresh data và DataTable
+    /// </summary>
+    private async Task ReloadTableData()
+    {
+        try
         {
-            await JS.InvokeVoidAsync("reinitUserDataTable", "#userDataTable");
-        }
+            // Destroy DataTable hiện tại
+            await DestroyDataTable();
 
+            // Load data mới
+            await LoadData();
+            
+            // Trigger UI update
+            StateHasChanged();
+
+            // Đợi DOM render xong
+            await Task.Delay(200);
+
+            // Reinit DataTable
+            await InitDataTable();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Reload table error: {ex.Message}");
+        }
+    }
+
+    #region Modal Operations
+
+    private async Task OpenAddModal()
+    {
+        isEditMode = false;
+        userFormModel = new UserFormModel { RowStatus = 1 };
+        password = string.Empty;
+        confirmPassword = string.Empty;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
+    }
+
+    private async Task OpenEditModal(UserDto user)
+    {
+        isEditMode = true;
+        userFormModel = new UserFormModel
+        {
+            Id = user.Id,
+            Name = user.Name,
+            UserName = user.UserName,
+            GroupId = user.GroupId,
+            Email = user.Email,
+            Phone = user.Phone,
+            Gender = user.Gender,
+            Cmnd = user.Cmnd,
+            Address = user.Address,
+            Image = user.Image,
+            Note = user.Note,
+            RowStatus = user.RowStatus
+        };
+        StateHasChanged();
+        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
+    }
+
+    private async Task OpenDeleteModal(UserDto user)
+    {
+        deleteUserId = user.Id;
+        deleteUserName = user.Name;
+        StateHasChanged();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('show')");
+    }
+
+    private async Task CloseModals()
+    {
+        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
+        await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
+        
+        // Reset form state
+        userFormModel = new UserFormModel();
+        password = string.Empty;
+        confirmPassword = string.Empty;
+        deleteUserId = string.Empty;
+        deleteUserName = string.Empty;
+        isProcessing = false;
+        
         StateHasChanged();
     }
 
+    #endregion
+
+    #region CRUD Operations
+
+    private async Task HandleSaveUser()
+    {
+        if (isProcessing) return;
+        
+        isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            // Validation
+            if (string.IsNullOrWhiteSpace(userFormModel.Name))
+            {
+                await ShowNotification("error", "Vui lòng nhập tên người dùng!");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(userFormModel.UserName))
+            {
+                await ShowNotification("error", "Vui lòng nhập tên đăng nhập!");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(userFormModel.GroupId))
+            {
+                await ShowNotification("error", "Vui lòng chọn nhóm!");
+                return;
+            }
+
+            if (!isEditMode)
+            {
+                // === CREATE ===
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    await ShowNotification("error", "Vui lòng nhập mật khẩu!");
+                    return;
+                }
+
+                if (password != confirmPassword)
+                {
+                    await ShowNotification("error", "Mật khẩu xác nhận không khớp!");
+                    return;
+                }
+
+                var createRequest = new CreateUserRequest
+                {
+                    Name = userFormModel.Name,
+                    UserName = userFormModel.UserName,
+                    Password = password,
+                    GroupId = userFormModel.GroupId,
+                    Email = userFormModel.Email,
+                    Phone = userFormModel.Phone,
+                    Gender = userFormModel.Gender,
+                    Cmnd = userFormModel.Cmnd,
+                    Address = userFormModel.Address,
+                    Note = userFormModel.Note,
+                    RowStatus = userFormModel.RowStatus
+                };
+
+                var newUser = await UserService.CreateUserAsync(createRequest);
+
+                if (newUser != null)
+                {
+                    await CloseModals();
+                    await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
+                    await ReloadTableData();
+                }
+                else
+                {
+                    await ShowNotification("error", "Không thể tạo người dùng!");
+                }
+            }
+            else
+            {
+                // === UPDATE ===
+                var updateRequest = new UpdateUserRequest
+                {
+                    Id = userFormModel.Id,
+                    Name = userFormModel.Name,
+                    GroupId = userFormModel.GroupId,
+                    Email = userFormModel.Email,
+                    Phone = userFormModel.Phone,
+                    Gender = userFormModel.Gender,
+                    Cmnd = userFormModel.Cmnd,
+                    Address = userFormModel.Address,
+                    Note = userFormModel.Note,
+                    RowStatus = userFormModel.RowStatus
+                };
+
+                var updatedUser = await UserService.UpdateUserAsync(updateRequest);
+
+                if (updatedUser != null)
+                {
+                    await CloseModals();
+                    await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
+                    await ReloadTableData();
+                }
+                else
+                {
+                    await ShowNotification("error", "Không thể cập nhật người dùng!");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowNotification("error", $"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDeleteUser()
+    {
+        if (string.IsNullOrEmpty(deleteUserId) || isProcessing) return;
+
+        isProcessing = true;
+        StateHasChanged();
+
+        var nameToDelete = deleteUserName;
+
+        try
+        {
+            // Đóng modal trước
+            await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
+            await Task.Delay(300);
+
+            var result = await UserService.DeleteUserAsync(deleteUserId);
+
+            // Reset state
+            deleteUserId = string.Empty;
+            deleteUserName = string.Empty;
+
+            if (result)
+            {
+                await ShowNotification("success", $"Xóa người dùng '{nameToDelete}' thành công!");
+                await ReloadTableData();
+            }
+            else
+            {
+                await ShowNotification("error", "Không thể xóa người dùng này!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowNotification("error", $"Lỗi khi xóa: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+            deleteUserId = string.Empty;
+            deleteUserName = string.Empty;
+            StateHasChanged();
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private async Task ShowNotification(string type, string message)
+    {
+        try
+        {
+            switch (type)
+            {
+                case "success":
+                    await NotificationService.ShowSuccessAsync(message);
+                    break;
+                case "error":
+                    await NotificationService.ShowErrorAsync(message);
+                    break;
+                case "warning":
+                    await NotificationService.ShowWarningAsync(message);
+                    break;
+                default:
+                    await NotificationService.ShowInfoAsync(message);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Notification error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     public void Dispose()
     {
+        objRef?.Dispose();
         if (dataTableInitialized)
         {
-            _ = JS.InvokeVoidAsync("destroyUserDataTable", "#userDataTable");
+            _ = JS.InvokeVoidAsync("destroyUserDataTable", $"#{tableId}");
         }
     }
 }

@@ -1,62 +1,208 @@
 ﻿using QLVN_Contracts.Dtos.User;
+using QLVN_Contracts.Dtos.Group;
 using System.Net.Http.Json;
+using System.Text.Json;
 
-namespace QLVN_Blazor.Services
+namespace QLVN_Blazor.Services;
+
+public class UserApiClient
 {
-    public class UserApiClient
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<UserApiClient> _logger;
+
+    public UserApiClient(HttpClient httpClient, ILogger<UserApiClient> logger)
     {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<UserApiClient> _logger; // Inject ILogger
+        _httpClient = httpClient;
+        _logger = logger;
+    }
 
-        public UserApiClient(HttpClient httpClient, ILogger<UserApiClient> logger)
+    #region User Methods
+
+    public async Task<List<UserDto>> GetUserAllSync()
+    {
+        try
         {
-            _httpClient = httpClient;
-            _logger = logger;
-            
+            _logger.LogInformation("Fetching users from API...");
+            var response = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User");
+            _logger.LogInformation("Users fetched successfully.");
+            return response ?? new();
         }
-
-        public async Task<List<UserDto>> GetUserAllSync()
+        catch (HttpRequestException ex)
         {
-            try
-            {
-                _logger.LogInformation("Fetching users from API...");
-                var response = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User");
-                _logger.LogInformation("Users fetched successfully.");
-                return response ?? new();
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "HTTP error fetching users.");
-                return new();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error fetching users.");
-                return new();
-            }
+            _logger.LogError(ex, "HTTP error fetching users.");
+            return new();
         }
-
-        
-
-        public async Task<UserDto?> GetByIdAsync(string id)
-            => await _httpClient.GetFromJsonAsync<UserDto>($"api/User/{id}");
-
-        public async Task<bool> CreateAsync(CreateUserRequest request)
+        catch (Exception ex)
         {
-            var res = await _httpClient.PostAsJsonAsync("api/User", request);
-            return res.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> UpdateAsync(string id, UpdateUserRequest request)
-        {
-            var res = await _httpClient.PutAsJsonAsync($"api/User/{id}", request);
-            return res.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> DeleteAsync(string id)
-        {
-            var res = await _httpClient.DeleteAsync($"api/User/{id}");
-            return res.IsSuccessStatusCode;
+            _logger.LogError(ex, "Unexpected error fetching users.");
+            return new();
         }
     }
+
+    public async Task<UserDto?> GetByIdAsync(string id)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/User/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error fetching user {id}");
+            return null;
+        }
+    }
+
+    public async Task<UserDto?> CreateUserAsync(CreateUserRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/User", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogError($"Create user failed: {response.StatusCode} - {error}");
+
+            // Parse error message if available
+            var errorMessage = ExtractErrorMessage(error) ?? "Tạo người dùng thất bại";
+            throw new HttpRequestException(errorMessage);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            throw new HttpRequestException($"Lỗi kết nối: {ex.Message}");
+        }
+    }
+
+    public async Task<UserDto?> UpdateUserAsync(UpdateUserRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/User/{request.Id}", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+                // Nếu không có content, trả về object với data từ request
+                return new UserDto
+                {
+                    Id = request.Id,
+                    Name = request.Name ?? string.Empty,
+                    GroupId = request.GroupId ?? string.Empty,
+                    Email = request.Email,
+                    Phone = request.Phone,
+                    Gender = request.Gender,
+                    Cmnd = request.Cmnd,
+                    Address = request.Address,
+                    Note = request.Note,
+                    RowStatus = request.RowStatus
+                };
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogError($"Update user failed: {response.StatusCode} - {error}");
+            throw new HttpRequestException($"Cập nhật người dùng thất bại: {error}");
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user");
+            throw new HttpRequestException($"Lỗi kết nối: {ex.Message}");
+        }
+    }
+
+    public async Task<bool> DeleteUserAsync(string userId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/User/{userId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting user {userId}");
+            throw;
+        }
+    }
+
+    private string? ExtractErrorMessage(string errorContent)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(errorContent)) return null;
+
+            using var doc = JsonDocument.Parse(errorContent);
+            if (doc.RootElement.TryGetProperty("message", out var message))
+            {
+                return message.GetString();
+            }
+            if (doc.RootElement.TryGetProperty("Message", out var msg))
+            {
+                return msg.GetString();
+            }
+        }
+        catch
+        {
+            // Ignore parse errors
+        }
+        return null;
+    }
+
+    #endregion
+
+    #region Group Methods
+
+    public async Task<List<GroupDto>> GetAllGroupsAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Fetching groups from API...");
+            var response = await _httpClient.GetFromJsonAsync<List<GroupDto>>("api/Group");
+            _logger.LogInformation("Groups fetched successfully.");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching groups");
+            return new();
+        }
+    }
+
+    #endregion
 }

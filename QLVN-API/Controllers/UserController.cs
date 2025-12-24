@@ -17,20 +17,26 @@ namespace QLVN_API.Controllers
         public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id) => Ok(await _userService.GetByIdAsync(id));
+        public async Task<IActionResult> GetById(string id)
+        {
+            var user = await _userService.GetByIdAsync(id);
+            if (user == null)
+                return NotFound(new { message = $"Không tìm thấy người dùng với ID: {id}" });
+            return Ok(user);
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
         {
-            await _userService.CreateAsync(request);
-            return StatusCode(201);
+            var newUser = await _userService.CreateAsync(request);
+            return StatusCode(201, newUser);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateUserRequest request)
         {
-            await _userService.UpdateAsync(id, request);
-            return NoContent();
+            var updatedUser = await _userService.UpdateAsync(id, request);
+            return Ok(updatedUser);
         }
 
         [HttpDelete("{id}")]
