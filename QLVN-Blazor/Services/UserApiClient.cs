@@ -82,15 +82,19 @@ public class UserApiClient
                 }
             }
 
+            //  Lỗi từ API
             var error = await response.Content.ReadAsStringAsync();
             _logger.LogError($"Create user failed: {response.StatusCode} - {error}");
 
-            // Parse error message if available
-            var errorMessage = ExtractErrorMessage(error) ?? "Tạo người dùng thất bại";
-            throw new HttpRequestException(errorMessage);
+            // Parse error message nếu có
+            var errorMessage = ExtractErrorMessage(error);
+
+            // Ném exception với message rõ ràng
+            throw new HttpRequestException(errorMessage ?? "Tạo người dùng thất bại");
         }
         catch (HttpRequestException)
         {
+            // Re-throw để UserList.razor bắt được
             throw;
         }
         catch (Exception ex)

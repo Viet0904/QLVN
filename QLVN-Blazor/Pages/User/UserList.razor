@@ -459,7 +459,7 @@
 
         try
         {
-            // Validation
+            // Validation cơ bản
             if (string.IsNullOrWhiteSpace(userFormModel.Name))
             {
                 await ShowNotification("error", "Vui lòng nhập tên người dùng!");
@@ -508,27 +508,40 @@
                     RowStatus = userFormModel.RowStatus
                 };
 
-                var newUser = await UserService.CreateUserAsync(createRequest);
-
-                if (newUser != null)
+                try
                 {
-                    // Đóng modal trước
-                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
+                    var newUser = await UserService.CreateUserAsync(createRequest);
 
-                    // Reset form state
-                    userFormModel = new UserFormModel();
-                    password = string.Empty;
-                    confirmPassword = string.Empty;
-                    isProcessing = false;
+                    if (newUser != null)
+                    {
+                        // Đóng modal trước
+                        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
-                    await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
+                        // Reset form state
+                        userFormModel = new UserFormModel();
+                        password = string.Empty;
+                        confirmPassword = string.Empty;
+                        isProcessing = false;
 
-                    // Local state update - KHÔNG gọi StateHasChanged sau đây
-                    await AddUserToLocalState(newUser);
+                        await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
+
+                        // Local state update
+                        await AddUserToLocalState(newUser);
+                    }
+                    else
+                    {
+                        await ShowNotification("error", "Không thể tạo người dùng!");
+                    }
                 }
-                else
+                catch (HttpRequestException httpEx)
                 {
-                    await ShowNotification("error", "Không thể tạo người dùng!");
+                    // ✅ Hiển thị lỗi từ API (trùng username, etc.)
+                    await ShowNotification("error", httpEx.Message);
+
+                    // KHÔNG đóng modal, để user sửa lại username
+                    isProcessing = false;
+                    StateHasChanged();
+                    return; // Thoát khỏi method
                 }
             }
             else
@@ -548,36 +561,47 @@
                     RowStatus = userFormModel.RowStatus
                 };
 
-                var updatedUser = await UserService.UpdateUserAsync(updateRequest);
-
-                if (updatedUser != null)
+                try
                 {
-                    // Đóng modal trước
-                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
+                    var updatedUser = await UserService.UpdateUserAsync(updateRequest);
 
-                    // Reset form state
-                    userFormModel = new UserFormModel();
-                    isProcessing = false;
+                    if (updatedUser != null)
+                    {
+                        // Đóng modal trước
+                        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
-                    await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
+                        // Reset form state
+                        userFormModel = new UserFormModel();
+                        isProcessing = false;
 
-                    // Local state update
-                    await UpdateUserInLocalState(updatedUser);
+                        await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
+
+                        // Local state update
+                        await UpdateUserInLocalState(updatedUser);
+                    }
+                    else
+                    {
+                        await ShowNotification("error", "Không thể cập nhật người dùng!");
+                    }
                 }
-                else
+                catch (HttpRequestException httpEx)
                 {
-                    await ShowNotification("error", "Không thể cập nhật người dùng!");
+                    // ✅ Hiển thị lỗi từ API
+                    await ShowNotification("error", httpEx.Message);
+                    isProcessing = false;
+                    StateHasChanged();
+                    return;
                 }
             }
         }
         catch (Exception ex)
         {
-            await ShowNotification("error", $"Lỗi: {ex.Message}");
+            // Lỗi không mong đợi
+            await ShowNotification("error", $"Lỗi không mong đợi: {ex.Message}");
         }
         finally
         {
             isProcessing = false;
-            // Chỉ StateHasChanged cho modal state, không ảnh hưởng table
             StateHasChanged();
         }
     }
