@@ -38,7 +38,7 @@ window.initUserDataTable = function (selector) {
 
     const table = $(selector).DataTable({
         responsive: false,
-        searching: false, // Tắt search của DataTables, sử dụng custom search
+        searching: true, // BẬT lại searching cho filter
         ordering: true,
         info: false,
         paging: false,
@@ -49,7 +49,7 @@ window.initUserDataTable = function (selector) {
         autoWidth: false,
         fixedColumns: false,
         deferRender: true,
-        
+
         select: {
             style: 'multi',
             selector: 'td:not(:last-child)',
@@ -88,7 +88,7 @@ window.initUserDataTable = function (selector) {
         drawCallback: function (settings) {
             console.log('📊 DataTable drawn');
             // Bind events sau khi draw
-            setTimeout(function() {
+            setTimeout(function () {
                 bindAllRowEvents(selector);
             }, 50);
         },
@@ -122,11 +122,12 @@ window.initUserDataTable = function (selector) {
             // Logic đóng dropdown - chỉ đóng khi click NGOÀI hoàn toàn
             $(document).off('click.dtUserMenu').on('click.dtUserMenu', function (e) {
                 var $target = $(e.target);
-                
+
+                // Không đóng nếu click vào dropdown hoặc input filter
                 if ($target.closest('.dt-column-dropdown').length > 0) {
                     return;
                 }
-                
+
                 if ($target.closest('.colvis-dropdown-custom').length > 0) {
                     return;
                 }
@@ -134,7 +135,7 @@ window.initUserDataTable = function (selector) {
                 if ($target.closest('.dt-column-menu').length > 0) {
                     return;
                 }
-                
+
                 if ($target.closest('.colvis-btn-custom').length > 0) {
                     return;
                 }
@@ -329,7 +330,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
     wrapper.find('.colvis-show-all').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
-        
+
         for (var i = 0; i < totalColumns - 1; i++) {
             api.column(i).visible(true);
         }
@@ -339,36 +340,36 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         console.log('✅ All columns shown');
     });
 
-    // Page length change - FIX: không gọi Blazor nếu đang xử lý
+    // Page length change
     var isChangingPageSize = false;
     wrapper.find('.dt-page-length').off('change').on('change', function (e) {
         e.stopPropagation();
         e.preventDefault();
-        
+
         if (isChangingPageSize) {
             console.log('⚠️ Page size change in progress, skipping');
             return;
         }
-        
+
         var pageSize = parseInt($(this).val(), 10);
-        
+
         if (isNaN(pageSize) || pageSize <= 0) {
             pageSize = 10;
         }
-        
+
         console.log('📊 Page size selected:', pageSize);
-        
+
         localStorage.setItem('userTablePageSize', pageSize.toString());
 
         if (window.blazorInstance) {
             isChangingPageSize = true;
             console.log('📊 Calling Blazor ChangePageSize:', pageSize);
             window.blazorInstance.invokeMethodAsync('ChangePageSize', pageSize)
-                .then(function() {
+                .then(function () {
                     console.log('✅ Page size changed successfully to:', pageSize);
                     isChangingPageSize = false;
                 })
-                .catch(function(err) {
+                .catch(function (err) {
                     console.error('❌ Page size change error:', err);
                     isChangingPageSize = false;
                 });
@@ -377,7 +378,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         }
     });
 
-    // Search với debounce - FIX: không gọi Blazor nếu đang xử lý
+    // Search với debounce
     var searchTimeout;
     var isSearching = false;
     wrapper.find('.dt-custom-search').on('input', function (e) {
@@ -390,17 +391,17 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
                 console.log('⚠️ Search in progress, skipping');
                 return;
             }
-            
+
             if (window.blazorInstance) {
                 isSearching = true;
                 console.log('🔍 Searching:', searchValue);
                 window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue || '')
-                    .then(function() { 
-                        console.log('✅ Search completed'); 
+                    .then(function () {
+                        console.log('✅ Search completed');
                         isSearching = false;
                     })
-                    .catch(function(err) { 
-                        console.error('❌ Search error:', err); 
+                    .catch(function (err) {
+                        console.error('❌ Search error:', err);
                         isSearching = false;
                     });
             }
@@ -413,14 +414,14 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         e.stopPropagation();
         if (window.blazorInstance) {
             window.blazorInstance.invokeMethodAsync('OpenAddModal')
-                .then(function() { console.log('✅ Add modal opened'); })
-                .catch(function(err) { console.error('❌ Add modal error:', err); });
+                .then(function () { console.log('✅ Add modal opened'); })
+                .catch(function (err) { console.error('❌ Add modal error:', err); });
         }
     });
 }
 
 // ==========================================
-// CREATE COLUMN MENU
+// CREATE COLUMN MENU - THÊM FILTER
 // ==========================================
 function createColumnMenu(column, header, index, api) {
     var menuBtn = $('<span class="dt-column-menu" title="Menu" style="cursor: pointer; margin-left: 8px;"><i class="feather icon-menu"></i></span>');
@@ -457,6 +458,29 @@ function createColumnMenu(column, header, index, api) {
             ">
                 <i class="feather icon-arrow-down"></i>
                 <span>Sắp xếp giảm dần</span>
+            </div>
+            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
+            <div class="dt-dropdown-filter" style="padding: 10px 16px;">
+                <input type="text" class="dt-filter-input" placeholder="Lọc..." style="
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 13px;
+                ">
+            </div>
+            <div class="dt-dropdown-item dt-clear-filter" style="
+                padding: 10px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: background 0.2s;
+                color: #dc3545;
+                border-top: 1px solid #eee;
+            ">
+                <i class="feather icon-x-circle"></i>
+                <span>Xóa bộ lọc</span>
             </div>
             <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
             <div class="dt-dropdown-item dt-hide-column" style="
@@ -525,6 +549,29 @@ function createColumnMenu(column, header, index, api) {
         console.log('✅ Sorted descending');
     });
 
+    // FILTER INPUT - Không đóng dropdown khi typing
+    var filterInput = dropdown.find('.dt-filter-input');
+
+    filterInput.on('click', function (e) {
+        e.stopPropagation(); // Không đóng dropdown
+    });
+
+    filterInput.on('keyup', function (e) {
+        e.stopPropagation();
+        var searchValue = $(this).val();
+        column.search(searchValue).draw();
+        console.log('🔍 Filtering column', index, ':', searchValue);
+    });
+
+    // CLEAR FILTER
+    dropdown.find('.dt-clear-filter').on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        filterInput.val('');
+        column.search('').draw();
+        console.log('✅ Filter cleared for column', index);
+    });
+
     dropdown.find('.dt-hide-column').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -533,20 +580,20 @@ function createColumnMenu(column, header, index, api) {
         console.log('✅ Column hidden');
     });
 
-    dropdown.on('click mousedown', function(e) {
+    dropdown.on('click mousedown', function (e) {
         e.stopPropagation();
     });
 }
 
 // ==========================================
-// BIND ROW EVENTS - FIX: Bind events ngay sau khi thêm row
+// BIND ROW EVENTS
 // ==========================================
 function bindAllRowEvents(selector) {
     var $table = $(selector);
     if (!$table.length) return;
-    
+
     console.log('🔗 Binding row events for:', selector);
-    
+
     $table.find('tbody tr').each(function () {
         bindRowActionEvents(this);
     });
@@ -556,11 +603,11 @@ function bindRowActionEvents(rowNode) {
     if (!rowNode) return;
 
     var $row = $(rowNode);
-    
+
     // Unbind trước để tránh duplicate
     $row.find('.btn-edit-user').off('click');
     $row.find('.btn-delete-user').off('click');
-    
+
     $row.find('.btn-edit-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -568,7 +615,7 @@ function bindRowActionEvents(rowNode) {
         if (userId && window.blazorInstance) {
             console.log('✏️ Edit user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString())
-                .catch(function(err) { console.error('❌ Edit error:', err); });
+                .catch(function (err) { console.error('❌ Edit error:', err); });
         } else {
             console.warn('⚠️ Cannot edit: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
@@ -581,7 +628,7 @@ function bindRowActionEvents(rowNode) {
         if (userId && window.blazorInstance) {
             console.log('🗑️ Delete user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString())
-                .catch(function(err) { console.error('❌ Delete error:', err); });
+                .catch(function (err) { console.error('❌ Delete error:', err); });
         } else {
             console.warn('⚠️ Cannot delete: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
@@ -641,7 +688,7 @@ window.updateUserDataTableData = function (selector, paginatedData) {
     try {
         var itemCount = paginatedData?.items?.length || 0;
         console.log('📊 Updating DataTable with', itemCount, 'items');
-        
+
         // Lưu scroll position
         var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
         var scrollTop = scrollBody.scrollTop();
@@ -682,13 +729,13 @@ window.updateUserDataTableData = function (selector, paginatedData) {
         table.draw(false);
 
         // Restore scroll và bind events
-        setTimeout(function() {
+        setTimeout(function () {
             scrollBody.scrollTop(scrollTop);
             scrollBody.scrollLeft(scrollLeft);
-            
+
             // Bind events cho tất cả rows
             bindAllRowEvents(selector);
-            
+
             console.log('✅ DataTable data updated successfully');
         }, 100);
 
@@ -698,72 +745,105 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 };
 
 // ==========================================
-// ROW ANIMATIONS
+// ROW ANIMATIONS - CẢI THIỆN TIMING
 // ==========================================
 window.addUserRowSmooth = function (selector, userId) {
     console.log('🎬 addUserRowSmooth called for:', userId);
-    
+
+    // Đợi lâu hơn để đảm bảo row đã được render
     setTimeout(function () {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-        
+
         if ($row.length > 0) {
             console.log('✅ Found row for animation:', userId);
-            
+
+            // Scroll đến row
+            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+            if (scrollBody.length > 0) {
+                var rowOffset = $row.position().top;
+                scrollBody.animate({ scrollTop: rowOffset }, 300);
+            }
+
+            // Animation
             $row.addClass('row-added');
             $row.css({
                 'background-color': '#d4edda',
-                'transition': 'background-color 2s ease'
+                'transition': 'background-color 2s ease',
+                'box-shadow': '0 0 10px rgba(40, 167, 69, 0.5)'
             });
-            
+
             setTimeout(function () {
                 $row.removeClass('row-added');
-                $row.css('background-color', '');
+                $row.css({
+                    'background-color': '',
+                    'box-shadow': ''
+                });
             }, 2000);
         } else {
             console.warn('⚠️ Row not found for userId:', userId);
         }
-    }, 200);
+    }, 300); // Tăng từ 200ms lên 300ms
 };
 
 window.updateUserRowSmooth = function (selector, userId) {
     console.log('🎬 updateUserRowSmooth called for:', userId);
-    
+
     setTimeout(function () {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-        
+
         if ($row.length > 0) {
             console.log('✅ Found row for update animation:', userId);
-            
+
+            // Scroll đến row
+            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+            if (scrollBody.length > 0) {
+                var rowOffset = $row.position().top;
+                scrollBody.animate({ scrollTop: rowOffset }, 300);
+            }
+
+            // Animation
             $row.addClass('row-updated');
             $row.css({
                 'background-color': '#fff3cd',
-                'transition': 'background-color 1.5s ease'
+                'transition': 'background-color 1.5s ease',
+                'box-shadow': '0 0 10px rgba(255, 193, 7, 0.5)'
             });
-            
+
             setTimeout(function () {
                 $row.removeClass('row-updated');
-                $row.css('background-color', '');
+                $row.css({
+                    'background-color': '',
+                    'box-shadow': ''
+                });
             }, 1500);
         } else {
             console.warn('⚠️ Row not found for update userId:', userId);
         }
-    }, 200);
+    }, 300);
 };
 
 window.deleteUserRowSmooth = function (selector, userId) {
     console.log('🎬 deleteUserRowSmooth called for:', userId);
-    
+
     return new Promise(function (resolve) {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
 
         if ($row.length > 0) {
             console.log('✅ Found row for delete animation:', userId);
-            
+
+            // Scroll đến row trước khi xóa
+            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+            if (scrollBody.length > 0) {
+                var rowOffset = $row.position().top;
+                scrollBody.animate({ scrollTop: rowOffset }, 200);
+            }
+
             $row.addClass('row-removing');
             $row.css({
                 'background-color': '#f8d7da',
                 'opacity': '0.7',
-                'transition': 'all 0.3s ease'
+                'transition': 'all 0.3s ease',
+                'box-shadow': '0 0 10px rgba(220, 53, 69, 0.5)'
             });
 
             setTimeout(function () {
@@ -821,7 +901,7 @@ function formatDateTime(dateString) {
     try {
         var date = new Date(dateString);
         if (isNaN(date.getTime())) return '';
-        
+
         var day = ('0' + date.getDate()).slice(-2);
         var month = ('0' + (date.getMonth() + 1)).slice(-2);
         var year = date.getFullYear();
