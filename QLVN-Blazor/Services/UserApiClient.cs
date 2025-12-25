@@ -171,7 +171,9 @@ public class UserApiClient
 
             var error = await response.Content.ReadAsStringAsync();
             _logger.LogError($"Update user failed: {response.StatusCode} - {error}");
-            throw new HttpRequestException($"Cập nhật người dùng thất bại: {error}");
+            
+            var errorMessage = ExtractErrorMessage(error);
+            throw new HttpRequestException(errorMessage ?? $"Cập nhật người dùng thất bại: {error}");
         }
         catch (HttpRequestException)
         {

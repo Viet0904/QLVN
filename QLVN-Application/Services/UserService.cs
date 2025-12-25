@@ -142,6 +142,13 @@ public class UserService : IUserService
         user.Image = request.Image;
         user.Gender = request.Gender;
         user.RowStatus = request.RowStatus;
+        
+        // Xử lý đổi password nếu có
+        if (request.ChangePassword && !string.IsNullOrWhiteSpace(request.Password))
+        {
+            user.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        }
+        
         user.UpdatedAt = DateTime.Now;
         user.UpdatedBy = "SYSTEM";
 

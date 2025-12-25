@@ -24,8 +24,13 @@ window.initUserDataTable = function (selector) {
     $('.colvis-dropdown-custom').remove();
     $('.dt-custom-toolbar').remove();
 
+    // RESPONSIVE: Tính toán height dựa trên viewport
     var viewportHeight = $(window).height();
-    var scrollHeight = Math.max(200, Math.min(500, viewportHeight * 0.5));
+    var headerHeight = 200; // Header + toolbar
+    var paginationHeight = 60; // Pagination
+    var scrollHeight = Math.max(300, viewportHeight - headerHeight - paginationHeight);
+    
+    console.log('📐 Calculated scroll height:', scrollHeight, 'viewport:', viewportHeight);
 
     var columnNames = [
         'Id', 'Nhóm', 'Tên', 'Giới tính', 'Tên đăng nhập',
@@ -38,7 +43,7 @@ window.initUserDataTable = function (selector) {
 
     const table = $(selector).DataTable({
         responsive: false,
-        searching: true, // BẬT lại searching cho filter
+        searching: true,
         ordering: true,
         info: false,
         paging: false,
@@ -58,7 +63,7 @@ window.initUserDataTable = function (selector) {
 
         pageLength: 10,
         pagingType: "full_numbers",
-        order: [[0, "asc"]],
+        order: [[0, "asc"], [1, "asc"]],
 
         layout: {
             topStart: null,
@@ -171,7 +176,16 @@ window.initUserDataTable = function (selector) {
         }
     });
 
-    $(window).off('resize.dtUserResize');
+    // RESPONSIVE: Handle window resize
+    $(window).off('resize.dtUserResize').on('resize.dtUserResize', function() {
+        var newViewportHeight = $(window).height();
+        var newScrollHeight = Math.max(300, newViewportHeight - headerHeight - paginationHeight);
+        
+        var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+        scrollBody.css('max-height', newScrollHeight + 'px');
+        
+        table.columns.adjust();
+    });
 
     console.log('✅ UserDataTable initialized successfully');
     return table;
@@ -421,7 +435,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
 }
 
 // ==========================================
-// CREATE COLUMN MENU - THÊM FILTER
+// CREATE COLUMN MENU - THÊM FILTER VỚI NHIỀU KIỂU
 // ==========================================
 function createColumnMenu(column, header, index, api) {
     var menuBtn = $('<span class="dt-column-menu" title="Menu" style="cursor: pointer; margin-left: 8px;"><i class="feather icon-menu"></i></span>');
@@ -434,7 +448,7 @@ function createColumnMenu(column, header, index, api) {
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 99999;
-            min-width: 200px;
+            min-width: 250px;
             display: none;
         ">
             <div class="dt-dropdown-item dt-sort-asc" style="
@@ -460,8 +474,32 @@ function createColumnMenu(column, header, index, api) {
                 <span>Sắp xếp giảm dần</span>
             </div>
             <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
+            <div class="dt-dropdown-section" style="padding: 10px 16px;">
+                <label class="dt-dropdown-label" style="
+                    display: block;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    margin-bottom: 6px;
+                ">Kiểu lọc</label>
+                <select class="dt-filter-type form-control form-control-sm" style="
+                    width: 100%;
+                    padding: 6px 10px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    background: #fff;
+                    cursor: pointer;
+                ">
+                    <option value="contains">Chứa (Contains)</option>
+                    <option value="equals">Bằng (Equals)</option>
+                    <option value="startswith">Bắt đầu bằng (Starts With)</option>
+                    <option value="endswith">Kết thúc bằng (Ends With)</option>
+                </select>
+            </div>
             <div class="dt-dropdown-filter" style="padding: 10px 16px;">
-                <input type="text" class="dt-filter-input" placeholder="Lọc..." style="
+                <input type="text" class="dt-filter-input form-control form-control-sm" placeholder="Nhập giá trị lọc..." style="
                     width: 100%;
                     padding: 8px 12px;
                     border: 1px solid #ced4da;
@@ -551,16 +589,55 @@ function createColumnMenu(column, header, index, api) {
 
     // FILTER INPUT - Không đóng dropdown khi typing
     var filterInput = dropdown.find('.dt-filter-input');
-
-    filterInput.on('click', function (e) {
-        e.stopPropagation(); // Không đóng dropdown
+    var filterType = dropdown.find('.dt-filter-type');
+    
+    filterInput.on('click', function(e) {
+        e.stopPropagation();
     });
 
-    filterInput.on('keyup', function (e) {
+    filterType.on('click change', function(e) {
         e.stopPropagation();
-        var searchValue = $(this).val();
-        column.search(searchValue).draw();
-        console.log('🔍 Filtering column', index, ':', searchValue);
+    });
+
+    // Apply filter với regex dựa trên loại
+    function applyFilter() {
+        var searchValue = filterInput.val();
+        var type = filterType.val();
+        
+        if (!searchValue) {
+            column.search('').draw();
+            return;
+        }
+
+        var regex;
+        switch(type) {
+            case 'equals':
+                regex = '^' + $.fn.dataTable.util.escapeRegex(searchValue) + '$';
+                break;
+            case 'startswith':
+                regex = '^' + $.fn.dataTable.util.escapeRegex(searchValue);
+                break;
+            case 'endswith':
+                regex = $.fn.dataTable.util.escapeRegex(searchValue) + '$';
+                break;
+            case 'contains':
+            default:
+                regex = $.fn.dataTable.util.escapeRegex(searchValue);
+                break;
+        }
+
+        column.search(regex, true, false).draw();
+        console.log('🔍 Filtering column', index, 'with type:', type, 'value:', searchValue);
+    }
+
+    filterInput.on('keyup', function(e) {
+        e.stopPropagation();
+        applyFilter();
+    });
+
+    filterType.on('change', function(e) {
+        e.stopPropagation();
+        applyFilter();
     });
 
     // CLEAR FILTER
@@ -568,6 +645,7 @@ function createColumnMenu(column, header, index, api) {
         e.stopPropagation();
         e.preventDefault();
         filterInput.val('');
+        filterType.val('contains');
         column.search('').draw();
         console.log('✅ Filter cleared for column', index);
     });
@@ -580,7 +658,7 @@ function createColumnMenu(column, header, index, api) {
         console.log('✅ Column hidden');
     });
 
-    dropdown.on('click mousedown', function (e) {
+    dropdown.on('click mousedown', function(e) {
         e.stopPropagation();
     });
 }
@@ -725,18 +803,18 @@ window.updateUserDataTableData = function (selector, paginatedData) {
             });
         }
 
-        // Draw table - false để giữ vị trí
+        // Draw table - false để giữ vị trí, KHÔNG bind events ngay
         table.draw(false);
 
-        // Restore scroll và bind events
+        // Restore scroll
         setTimeout(function () {
             scrollBody.scrollTop(scrollTop);
             scrollBody.scrollLeft(scrollLeft);
 
-            // Bind events cho tất cả rows
+            // QUAN TRỌNG: Bind events SAU khi draw xong
             bindAllRowEvents(selector);
 
-            console.log('✅ DataTable data updated successfully');
+            console.log('✅ DataTable data updated and events bound');
         }, 100);
 
     } catch (error) {
@@ -745,72 +823,83 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 };
 
 // ==========================================
-// ROW ANIMATIONS - CẢI THIỆN TIMING
+// ROW ANIMATIONS - FIXED VERSION
 // ==========================================
 window.addUserRowSmooth = function (selector, userId) {
     console.log('🎬 addUserRowSmooth called for:', userId);
-
-    // Đợi lâu hơn để đảm bảo row đã được render
-    setTimeout(function () {
+    
+    // Tăng delay lên 800ms để đảm bảo row đã được render
+    setTimeout(function() {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-
+        
         if ($row.length > 0) {
-            console.log('✅ Found row for animation:', userId);
-
+            console.log('✅ Found row for animation, userId:', userId);
+            
             // Scroll đến row
             var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
             if (scrollBody.length > 0) {
                 var rowOffset = $row.position().top;
-                scrollBody.animate({ scrollTop: rowOffset }, 300);
+                scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 100 }, 300);
             }
-
+            
             // Animation
-            $row.addClass('row-added');
             $row.css({
                 'background-color': '#d4edda',
                 'transition': 'background-color 2s ease',
                 'box-shadow': '0 0 10px rgba(40, 167, 69, 0.5)'
             });
-
+            
             setTimeout(function () {
-                $row.removeClass('row-added');
                 $row.css({
                     'background-color': '',
                     'box-shadow': ''
                 });
             }, 2000);
         } else {
-            console.warn('⚠️ Row not found for userId:', userId);
+            console.warn('⚠️ Row not found for add userId:', userId);
+            // Retry sau 500ms nữa
+            setTimeout(function() {
+                var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
+                if ($retryRow.length > 0) {
+                    console.log('✅ Found row on retry for userId:', userId);
+                    $retryRow.css({
+                        'background-color': '#d4edda',
+                        'transition': 'background-color 2s ease'
+                    });
+                    setTimeout(function() {
+                        $retryRow.css('background-color', '');
+                    }, 2000);
+                }
+            }, 500);
         }
-    }, 300); // Tăng từ 200ms lên 300ms
+    }, 800);
 };
 
 window.updateUserRowSmooth = function (selector, userId) {
     console.log('🎬 updateUserRowSmooth called for:', userId);
-
-    setTimeout(function () {
+    
+    // Tăng delay lên 800ms
+    setTimeout(function() {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-
+        
         if ($row.length > 0) {
-            console.log('✅ Found row for update animation:', userId);
-
+            console.log('✅ Found row for update animation, userId:', userId);
+            
             // Scroll đến row
             var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
             if (scrollBody.length > 0) {
                 var rowOffset = $row.position().top;
-                scrollBody.animate({ scrollTop: rowOffset }, 300);
+                scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 100 }, 300);
             }
-
+            
             // Animation
-            $row.addClass('row-updated');
             $row.css({
                 'background-color': '#fff3cd',
                 'transition': 'background-color 1.5s ease',
                 'box-shadow': '0 0 10px rgba(255, 193, 7, 0.5)'
             });
-
+            
             setTimeout(function () {
-                $row.removeClass('row-updated');
                 $row.css({
                     'background-color': '',
                     'box-shadow': ''
@@ -818,47 +907,37 @@ window.updateUserRowSmooth = function (selector, userId) {
             }, 1500);
         } else {
             console.warn('⚠️ Row not found for update userId:', userId);
+            // Retry sau 500ms nữa
+            setTimeout(function() {
+                var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
+                if ($retryRow.length > 0) {
+                    console.log('✅ Found row on retry for userId:', userId);
+                    $retryRow.css({
+                        'background-color': '#fff3cd',
+                        'transition': 'background-color 1.5s ease'
+                    });
+                    setTimeout(function() {
+                        $retryRow.css('background-color', '');
+                    }, 1500);
+                }
+            }, 500);
         }
-    }, 300);
+    }, 800);
 };
 
-window.deleteUserRowSmooth = function (selector, userId) {
-    console.log('🎬 deleteUserRowSmooth called for:', userId);
-
-    return new Promise(function (resolve) {
-        var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-
-        if ($row.length > 0) {
-            console.log('✅ Found row for delete animation:', userId);
-
-            // Scroll đến row trước khi xóa
-            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-            if (scrollBody.length > 0) {
-                var rowOffset = $row.position().top;
-                scrollBody.animate({ scrollTop: rowOffset }, 200);
-            }
-
-            $row.addClass('row-removing');
-            $row.css({
-                'background-color': '#f8d7da',
-                'opacity': '0.7',
-                'transition': 'all 0.3s ease',
-                'box-shadow': '0 0 10px rgba(220, 53, 69, 0.5)'
-            });
-
-            setTimeout(function () {
-                $row.fadeOut(300, function () {
-                    console.log('✅ Row fade out complete');
-                    resolve();
-                });
-            }, 100);
-        } else {
-            console.warn('⚠️ Row not found for delete userId:', userId);
-            resolve();
-        }
-    });
+window.deleteUserRowSmooth = function(selector, userId) {
+    var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
+    if ($row.length > 0) {
+        console.log('✅ Animating delete for userId:', userId);
+        $row.css({
+            'background-color': '#f8d7da',
+            'transition': 'all 0.4s ease',
+            'opacity': '0.5'
+        });
+    } else {
+        console.warn('⚠️ Row not found for delete userId:', userId);
+    }
 };
-
 // ==========================================
 // HELPER FUNCTIONS FOR ROW RENDERING
 // ==========================================

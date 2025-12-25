@@ -16,20 +16,18 @@
 
 .dt-scroll-head {
     background: #f8f9fa !important;
-    overflow: hidden !important; /* FIX 2: Prevent head scroll */
+    overflow: hidden !important;
 }
 
-/* FIX 2: Scroll body - ngăn giật */
+/* Scroll body - ngăn giật */
 .dt-scroll-body {
     max-height: 400px;
     overflow-y: auto !important;
     overflow-x: auto !important;
-    /* FIX 2: Smooth scroll */
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-/* FIX 2: Ngăn scroll sync gây giật */
 .dataTables_scrollBody {
     overflow-x: auto !important;
     overflow-y: auto !important;
@@ -38,19 +36,19 @@
 /* Responsive height theo viewport */
 @media screen and (min-height: 900px) {
     .dt-scroll-body {
-        max-height: 500px;
+        max-height: 600px;
     }
 }
 
 @media screen and (max-height: 700px) {
     .dt-scroll-body {
-        max-height: 300px;
+        max-height: 350px;
     }
 }
 
 @media screen and (max-height: 500px) {
     .dt-scroll-body {
-        max-height: 200px;
+        max-height: 250px;
     }
 }
 
@@ -179,7 +177,7 @@ table.dataTable tfoot th {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-    z-index: 99999; /* Tăng z-index */
+    z-index: 99999;
     padding: 8px 0;
 }
 
@@ -232,7 +230,6 @@ table.dataTable tfoot th {
     margin-bottom: 6px;
 }
 
-/* FIX 5: Filter type select */
 .dt-filter-type {
     width: 100%;
     padding: 8px 10px;
@@ -253,7 +250,6 @@ table.dataTable tfoot th {
     padding: 8px 16px;
 }
 
-/* FIX 5: Filter input - không bị tự động đóng */
 .dt-filter-input {
     width: 100%;
     padding: 8px 12px;
@@ -331,7 +327,7 @@ table.dataTable tfoot th {
     overflow: visible !important;
 }
 
-/* FIX 2: Custom scrollbar - smooth */
+/* Custom scrollbar - smooth */
 .dt-scroll-body::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -352,7 +348,6 @@ table.dataTable tfoot th {
         background: #888;
     }
 
-/* FIX 2: Scrollbar corner */
 .dt-scroll-body::-webkit-scrollbar-corner {
     background: #f1f1f1;
 }
@@ -688,6 +683,7 @@ table.dataTable tbody tr.selected {
         opacity: 0.5;
         background-color: #d4edda;
     }
+
     100% {
         opacity: 1;
         background-color: transparent;
@@ -698,6 +694,7 @@ table.dataTable tbody tr.selected {
     0%, 50% {
         background-color: #fff3cd;
     }
+
     100% {
         background-color: transparent;
     }
@@ -707,6 +704,7 @@ table.dataTable tbody tr.selected {
     0% {
         opacity: 1;
     }
+
     100% {
         opacity: 0;
         transform: translateX(50px);
@@ -725,7 +723,6 @@ table.dataTable tbody tr.selected {
     animation: rowRemovingSmooth 0.3s ease-out forwards;
 }
 
-/* FIX 4: Smooth transitions for rows - không giật khi chuyển trang */
 #userDataTable tbody tr {
     transition: background-color 0.2s ease;
 }
@@ -734,12 +731,10 @@ table.dataTable tbody tr.selected {
         background-color: #f8f9fa !important;
     }
 
-    /* Selection style */
     #userDataTable tbody tr.selected {
         background-color: #e3f2fd !important;
     }
 
-/* FIX 1: Table layout - ngăn UI bị lỗi khi hiện/ẩn cột */
 #userDataTable {
     width: 100% !important;
 }
@@ -749,7 +744,6 @@ table.dataTable tbody tr.selected {
         box-sizing: border-box;
     }
 
-/* FIX 4: Pagination smooth */
 .dt-custom-pagination {
     padding: 15px 0;
     border-top: 1px solid #e9ecef;
@@ -768,13 +762,11 @@ table.dataTable tbody tr.selected {
             transform: translateY(0);
         }
 
-/* Loading state - không giật */
 .table-responsive {
     position: relative;
     min-height: 200px;
 }
 
-/* Modal styles */
 .modal-header.bg-danger {
     background-color: #dc3545 !important;
 }
@@ -784,14 +776,12 @@ table.dataTable tbody tr.selected {
         opacity: 1;
     }
 
-/* Spinner in button */
 .spinner-border-sm {
     width: 1rem;
     height: 1rem;
     border-width: 0.2em;
 }
 
-/* Form validation */
 .form-control.is-invalid {
     border-color: #dc3545;
 }
@@ -800,7 +790,90 @@ table.dataTable tbody tr.selected {
     font-size: 0.875em;
 }
 
-/* Optimize performance */
 .card-block {
     contain: layout style;
+}
+
+/* ==========================================
+   MODAL STYLES - TWO SECTIONS
+   ========================================== */
+
+#userModal .modal-body {
+    padding: 20px;
+}
+
+#userModal .card {
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+#userModal .card-header {
+    padding: 12px 20px;
+    border-bottom: 2px solid rgba(255,255,255,0.3);
+}
+
+    #userModal .card-header h6 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        #userModal .card-header h6 i {
+            font-size: 16px;
+        }
+
+#userModal .card-header.bg-primary {
+    background: linear-gradient(135deg, #4680ff 0%, #4666ff 100%);
+}
+
+#userModal .card-header.bg-info {
+    background: linear-gradient(135deg, #01a9ac 0%, #019a9c 100%);
+}
+
+#userModal .card-body {
+    padding: 20px;
+    background: #ffffff;
+}
+
+#userModal .form-group {
+    margin-bottom: 15px;
+}
+
+    #userModal .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 5px;
+    }
+
+#userModal .form-check {
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+    #userModal .form-check:hover {
+        background: #e9ecef;
+    }
+
+#userModal .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    cursor: pointer;
+}
+
+    #userModal .form-check-input:checked {
+        background-color: #01a9ac;
+        border-color: #01a9ac;
+    }
+
+#userModal .form-check-label {
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 14px;
 }

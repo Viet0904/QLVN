@@ -27,4 +27,7 @@ public class UserFormModel
     public string? Image { get; set; }
     public string? Note { get; set; }
     public int RowStatus { get; set; } = 1;
+    
+    // Thêm hỗ trợ đổi password
+    public bool ChangePassword { get; set; } = false;
 }

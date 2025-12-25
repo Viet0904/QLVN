@@ -384,7 +384,7 @@
     private async Task OpenAddModal()
     {
         isEditMode = false;
-        userFormModel = new UserFormModel { RowStatus = 1 };
+        userFormModel = new UserFormModel { RowStatus = 1, ChangePassword = false };
         password = string.Empty;
         confirmPassword = string.Empty;
         StateHasChanged();
@@ -407,8 +407,11 @@
             Address = user.Address,
             Image = user.Image,
             Note = user.Note,
-            RowStatus = user.RowStatus
+            RowStatus = user.RowStatus,
+            ChangePassword = false // Mặc định không đổi password
         };
+        password = string.Empty;
+        confirmPassword = string.Empty;
         StateHasChanged();
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
     }
@@ -564,8 +567,26 @@
                     Cmnd = userFormModel.Cmnd,
                     Address = userFormModel.Address,
                     Note = userFormModel.Note,
-                    RowStatus = userFormModel.RowStatus
+                    RowStatus = userFormModel.RowStatus,
+                    ChangePassword = userFormModel.ChangePassword,
+                    Password = userFormModel.ChangePassword ? password : null
                 };
+
+                // Validation cho password nếu chọn đổi
+                if (updateRequest.ChangePassword)
+                {
+                    if (string.IsNullOrWhiteSpace(password))
+                    {
+                        await ShowNotification("error", "Vui lòng nhập mật khẩu mới!");
+                        return;
+                    }
+
+                    if (password != confirmPassword)
+                    {
+                        await ShowNotification("error", "Mật khẩu xác nhận không khớp!");
+                        return;
+                    }
+                }
 
                 var updatedUser = await UserService.UpdateUserAsync(updateRequest);
 
@@ -577,6 +598,8 @@
                     // Reset form
                     var updatedUserId = userFormModel.Id;
                     userFormModel = new UserFormModel();
+                    password = string.Empty;
+                    confirmPassword = string.Empty;
 
                     await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
 

@@ -1,5 +1,4 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace QLVN_Contracts.Dtos.User;
 
@@ -18,4 +17,8 @@ public class UpdateUserRequest
     public string? Address { get; set; }
     public string? Note { get; set; }
     public int RowStatus { get; set; } = 1;
+    
+    // Thêm hỗ trợ đổi password
+    public bool ChangePassword { get; set; } = false;
+    public string? Password { get; set; }
 }
