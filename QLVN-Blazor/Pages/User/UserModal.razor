@@ -123,7 +123,7 @@
                                 </div>
                             </div>
 
-                            <!-- DI CHUYỂN TRẠNG THÁI VÀO ĐÂY -->
+                            <!-- TRẠNG THÁI -->
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="form-group">
@@ -138,22 +138,35 @@
 
                             @if (IsEditMode)
                             {
-                                <!-- Checkbox đổi password khi Edit -->
+                                <!-- Checkbox đổi password khi Edit - FIXED UI -->
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <div class="form-check mb-3">
-                                            <input type="checkbox" class="form-check-input" id="changePasswordCheck" 
-                                                   @bind="UserModel.ChangePassword" />
-                                            <label class="form-check-label" for="changePasswordCheck">
-                                                <strong>Đổi mật khẩu</strong>
-                                            </label>
+                                        <div class="form-group mb-3" style="padding: 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                            <div class="d-flex align-items-center">
+                                                <input type="checkbox" 
+                                                       id="changePasswordCheck" 
+                                                       class="form-check-input"
+                                                       style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: #01a9ac;"
+                                                       checked="@UserModel.ChangePassword"
+                                                       @onchange="OnChangePasswordToggle" />
+                                                <label for="changePasswordCheck" style="cursor: pointer; margin-bottom: 0; font-weight: 600; color: #495057;">
+                                                    <i class="feather icon-key" style="margin-right: 8px; color: #01a9ac;"></i>
+                                                    Đổi mật khẩu
+                                                </label>
+                                            </div>
+                                            @if (UserModel.ChangePassword)
+                                            {
+                                                <small class="text-muted d-block mt-2" style="margin-left: 32px;">
+                                                    <i class="feather icon-info"></i> Nhập mật khẩu mới bên dưới
+                                                </small>
+                                            }
                                         </div>
                                     </div>
                                 </div>
 
                                 @if (UserModel.ChangePassword)
                                 {
-                                    <div class="row">
+                                    <div class="row" style="animation: fadeIn 0.3s ease;">
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label>Mật khẩu mới <span class="text-danger">*</span></label>
@@ -216,7 +229,7 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal - GIỮ NGUYÊN -->
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" style="z-index: 1050;">
     <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 450px;">
         <div class="modal-content">
@@ -259,6 +272,13 @@
         </div>
     </div>
 </div>
+
+<style>
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 @code {
     [Parameter] public UserFormModel UserModel { get; set; } = new();
@@ -304,6 +324,18 @@
                 ConfirmPasswordChanged.InvokeAsync(value);
             }
         }
+    }
+
+    private void OnChangePasswordToggle(ChangeEventArgs e)
+    {
+        UserModel.ChangePassword = (bool)(e.Value ?? false);
+        if (!UserModel.ChangePassword)
+        {
+            // Reset password fields khi bỏ chọn
+            PasswordValue = string.Empty;
+            ConfirmPasswordValue = string.Empty;
+        }
+        StateHasChanged();
     }
 
     private async Task HandleSubmit()

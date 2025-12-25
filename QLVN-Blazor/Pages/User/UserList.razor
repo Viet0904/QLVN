@@ -26,7 +26,7 @@
             </div>
 
             <div class="card-block">
-                @if (isLoading)
+                @if (isLoading && !dataTableInitialized)
                 {
                     <div class="text-center py-5">
                         <div class="spinner-border text-primary" role="status">
@@ -35,14 +35,9 @@
                         <p class="mt-2">Đang tải dữ liệu...</p>
                     </div>
                 }
-                else if (paginatedUsers == null || !paginatedUsers.Items.Any())
-                {
-                    <div class="alert alert-info">
-                        <strong>Thông báo:</strong> Không có dữ liệu người dùng.
-                    </div>
-                }
                 else
                 {
+                    @* LUÔN HIỆN TABLE - Kể cả khi không có data *@
                     <div class="table-responsive" @ref="tableContainerRef">
                         <table id="@tableId" class="table table-striped table-hover table-bordered" style="width:100%">
                             <thead class="table-light">
@@ -74,30 +69,41 @@
                         @* Pagination riêng biệt - Blazor quản lý *@
                         <div class="dt-custom-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
                             <div class="dt-pagination-info">
-                                Hiển thị từ @((paginationRequest.PageNumber - 1) * paginationRequest.PageSize + 1)
-                                đến @(Math.Min(paginationRequest.PageNumber * paginationRequest.PageSize, paginatedUsers.TotalRecords))
-                                trong @paginatedUsers.TotalRecords bản ghi
+                                @if (paginatedUsers != null && paginatedUsers.TotalRecords > 0)
+                                {
+                                    <span>
+                                        Hiển thị từ @((paginationRequest.PageNumber - 1) * paginationRequest.PageSize + 1)
+                                        đến @(Math.Min(paginationRequest.PageNumber * paginationRequest.PageSize, paginatedUsers.TotalRecords))
+                                        trong @paginatedUsers.TotalRecords bản ghi
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Không có dữ liệu phù hợp</span>
+                                }
                             </div>
                             <div class="dt-pagination-buttons">
                                 <button class="btn btn-sm btn-outline-primary"
                                         @onclick="() => ChangePage(1)"
-                                        disabled="@(!paginatedUsers.HasPreviousPage)">
+                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasPreviousPage)">
                                     «
                                 </button>
                                 <button class="btn btn-sm btn-outline-primary"
                                         @onclick="() => ChangePage(paginationRequest.PageNumber - 1)"
-                                        disabled="@(!paginatedUsers.HasPreviousPage)">
+                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasPreviousPage)">
                                     ‹
                                 </button>
-                                <span class="mx-2">Trang @paginationRequest.PageNumber / @paginatedUsers.TotalPages</span>
+                                <span class="mx-2">
+                                    Trang @paginationRequest.PageNumber / @(paginatedUsers?.TotalPages ?? 1)
+                                </span>
                                 <button class="btn btn-sm btn-outline-primary"
                                         @onclick="() => ChangePage(paginationRequest.PageNumber + 1)"
-                                        disabled="@(!paginatedUsers.HasNextPage)">
+                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasNextPage)">
                                     ›
                                 </button>
                                 <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => ChangePage(paginatedUsers.TotalPages)"
-                                        disabled="@(!paginatedUsers.HasNextPage)">
+                                        @onclick="() => ChangePage(paginatedUsers?.TotalPages ?? 1)"
+                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasNextPage)">
                                     »
                                 </button>
                             </div>
@@ -165,7 +171,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (paginatedUsers.Items.Any() && !layoutInitialized)
+        // Chỉ cần isLoading = false, KHÔNG cần check paginatedUsers.Items.Any()
+        if (!isLoading && !layoutInitialized)
         {
             layoutInitialized = true;
 
@@ -294,6 +301,7 @@
 
             paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
             
+            // LUÔN update DataTable - kể cả khi không có data
             if (dataTableInitialized)
             {
                 await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
@@ -545,10 +553,8 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Đợi thêm để đảm bảo DataTable đã render xong
-                        await Task.Delay(500);
-                        
-                        // Hiệu ứng row mới - gọi sau khi đã delay
+                        // Hiệu ứng row mới - delay ngắn hơn
+                        await Task.Delay(200);
                         await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
                     }
                     
@@ -613,10 +619,8 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Đợi thêm để đảm bảo DataTable đã render xong
-                        await Task.Delay(500);
-                        
-                        // Hiệu ứng row đã cập nhật - gọi sau khi đã delay
+                        // Hiệu ứng row đã cập nhật - delay ngắn hơn
+                        await Task.Delay(200);
                         await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
                     }
                     

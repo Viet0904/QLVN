@@ -521,7 +521,7 @@ table.dataTable tbody tr.selected {
 }
 
 /* ========================================
-   COLUMN VISIBILITY & MENU STYLES
+   COLUMN VISIBILITY & MENU STYLES - FIXED COLORS
    ======================================== */
 
 /* Column visibility button */
@@ -543,13 +543,13 @@ table.dataTable tbody tr.selected {
     background: #5a6268;
 }
 
-/* Dropdown menu */
+/* Dropdown menu - FIXED COLORS */
 .colvis-dropdown-custom {
     position: absolute;
     top: 100%;
     left: 0;
     margin-top: 5px;
-    background: white;
+    background: #ffffff;
     border: 1px solid #ddd;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -568,29 +568,52 @@ table.dataTable tbody tr.selected {
     align-items: center;
     gap: 10px;
     transition: background 0.2s;
+    background: #ffffff;
+    color: #333333 !important;
 }
 
 .colvis-item:hover {
-    background: #f5f5f5;
+    background: #f0f7ff !important;
 }
 
 .colvis-show-all {
     border-bottom: 1px solid #eee;
     font-weight: 600;
-    color: #4680ff;
+    color: #4680ff !important;
+    background: #f8f9fa;
+}
+
+.colvis-show-all:hover {
+    background: #e3ecff !important;
 }
 
 .colvis-check {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ddd;
-    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #01a9ac;
+    border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    color: #4680ff;
+    font-size: 14px;
+    color: #01a9ac;
     font-weight: bold;
+    background: #ffffff;
+    flex-shrink: 0;
+}
+
+.colvis-name {
+    font-size: 14px;
+    color: #333333 !important;
+    font-weight: 500;
+}
+
+.colvis-column-toggle {
+    background: #ffffff !important;
+}
+
+.colvis-column-toggle:hover {
+    background: #f0f7ff !important;
 }
 
 /* ========================================
@@ -798,6 +821,198 @@ table.dataTable .btn-sm {
 }
 
 /* ========================================
+   ROW ANIMATION EFFECTS - ADD/EDIT/DELETE
+   ======================================== */
+
+/* Animation cho row mới được thêm */
+@keyframes rowAddAnimation {
+    0% {
+        background-color: #d4edda !important;
+        transform: scale(1.01);
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+    }
+    50% {
+        background-color: #c3e6cb !important;
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+        box-shadow: none;
+    }
+}
+
+/* Animation cho row được cập nhật */
+@keyframes rowUpdateAnimation {
+    0% {
+        background-color: #fff3cd !important;
+        transform: scale(1.01);
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
+    }
+    50% {
+        background-color: #ffeeba !important;
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+        box-shadow: none;
+    }
+}
+
+/* Animation cho row sắp xóa */
+@keyframes rowDeleteAnimation {
+    0% {
+        opacity: 1;
+        background-color: #f8d7da !important;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        background-color: #f5c6cb !important;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.95) translateX(20px);
+        height: 0;
+        padding: 0;
+        margin: 0;
+    }
+}
+
+/* Class cho row animation */
+table.dataTable tbody tr.row-added {
+    animation: rowAddAnimation 2s ease-out;
+}
+
+table.dataTable tbody tr.row-updated {
+    animation: rowUpdateAnimation 1.5s ease-out;
+}
+
+table.dataTable tbody tr.row-deleting {
+    animation: rowDeleteAnimation 0.5s ease-out forwards;
+}
+
+/* Highlight styles - sử dụng với JS */
+table.dataTable tbody tr.highlight-add {
+    background-color: #d4edda !important;
+    transition: background-color 2s ease;
+}
+
+table.dataTable tbody tr.highlight-add td {
+    background-color: #d4edda !important;
+}
+
+table.dataTable tbody tr.highlight-update {
+    background-color: #fff3cd !important;
+    transition: background-color 1.5s ease;
+}
+
+table.dataTable tbody tr.highlight-update td {
+    background-color: #fff3cd !important;
+}
+
+table.dataTable tbody tr.highlight-delete {
+    background-color: #f8d7da !important;
+    opacity: 0.7;
+    transition: all 0.4s ease;
+}
+
+table.dataTable tbody tr.highlight-delete td {
+    background-color: #f8d7da !important;
+}
+
+/* ========================================
+   MODAL CHECKBOX STYLES - FIX ĐỔI MẬT KHẨU
+   ======================================== */
+
+/* Custom checkbox fade style cho modal */
+#userModal .form-check {
+    padding-left: 0;
+}
+
+#userModal .form-check-input {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    cursor: pointer;
+    border: 2px solid #01a9ac;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+#userModal .form-check-input:checked {
+    background-color: #01a9ac;
+    border-color: #01a9ac;
+}
+
+#userModal .form-check-label {
+    cursor: pointer;
+    vertical-align: middle;
+    margin-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Alternative: checkbox-fade style giống template */
+.checkbox-fade.fade-in-primary {
+    display: inline-block;
+}
+
+.checkbox-fade.fade-in-primary label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.checkbox-fade.fade-in-primary input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-fade.fade-in-primary .cr {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #e9ecef;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.checkbox-fade.fade-in-primary input[type="checkbox"]:checked + .cr {
+    background: #01a9ac;
+    border-color: #01a9ac;
+}
+
+.checkbox-fade.fade-in-primary .cr-icon {
+    font-size: 12px;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.checkbox-fade.fade-in-primary input[type="checkbox"]:checked + .cr .cr-icon {
+    opacity: 1;
+}
+
+/* Password change checkbox specific */
+#changePasswordCheck {
+    width: 20px;
+    height: 20px;
+    accent-color: #01a9ac;
+    cursor: pointer;
+}
+
+#changePasswordCheck + label,
+label[for="changePasswordCheck"] {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* ========================================
    UTILITY CLASSES
    ======================================== */
 
@@ -813,4 +1028,16 @@ table.dataTable .btn-sm {
 /* Smooth transitions */
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* ========================================
+   EMPTY TABLE MESSAGE STYLE
+   ======================================== */
+
+table.dataTable tbody td.dataTables_empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 15px;
+    background: #fafafa;
 }
