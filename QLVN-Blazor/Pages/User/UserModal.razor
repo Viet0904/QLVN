@@ -58,19 +58,10 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="form-group">
                                         <label>CMND/CCCD</label>
                                         <InputText @bind-Value="UserModel.Cmnd" class="form-control" placeholder="Nhập CMND/CCCD" />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Trạng thái</label>
-                                        <InputSelect @bind-Value="UserModel.RowStatus" class="form-control">
-                                            <option value="1">Hoạt động</option>
-                                            <option value="0">Ngừng hoạt động</option>
-                                        </InputSelect>
                                     </div>
                                 </div>
                             </div>
@@ -128,6 +119,19 @@
                                             }
                                         </InputSelect>
                                         <ValidationMessage For="@(() => UserModel.GroupId)" class="text-danger" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DI CHUYỂN TRẠNG THÁI VÀO ĐÂY -->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Trạng thái <span class="text-danger">*</span></label>
+                                        <InputSelect @bind-Value="UserModel.RowStatus" class="form-control">
+                                            <option value="1">Hoạt động</option>
+                                            <option value="0">Ngừng hoạt động</option>
+                                        </InputSelect>
                                     </div>
                                 </div>
                             </div>
@@ -212,7 +216,7 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Delete Confirmation Modal - GIỮ NGUYÊN -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" style="z-index: 1050;">
     <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 450px;">
         <div class="modal-content">

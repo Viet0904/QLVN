@@ -545,7 +545,10 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Hiệu ứng row mới
+                        // Đợi thêm để đảm bảo DataTable đã render xong
+                        await Task.Delay(500);
+                        
+                        // Hiệu ứng row mới - gọi sau khi đã delay
                         await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
                     }
                     
@@ -610,7 +613,10 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Hiệu ứng row đã cập nhật
+                        // Đợi thêm để đảm bảo DataTable đã render xong
+                        await Task.Delay(500);
+                        
+                        // Hiệu ứng row đã cập nhật - gọi sau khi đã delay
                         await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
                     }
                     

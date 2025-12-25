@@ -24,13 +24,24 @@ window.initUserDataTable = function (selector) {
     $('.colvis-dropdown-custom').remove();
     $('.dt-custom-toolbar').remove();
 
-    // RESPONSIVE: Tính toán height dựa trên viewport
+    // RESPONSIVE: Tính toán height dựa trên viewport với breakpoints
     var viewportHeight = $(window).height();
-    var headerHeight = 200; // Header + toolbar
-    var paginationHeight = 60; // Pagination
+    var viewportWidth = $(window).width();
+    var headerHeight = 200;
+    var paginationHeight = 60;
+    
+    // Responsive adjustments
+    if (viewportWidth < 768) { // Mobile
+        headerHeight = 250;
+        paginationHeight = 80;
+    } else if (viewportWidth < 992) { // Tablet
+        headerHeight = 220;
+        paginationHeight = 70;
+    }
+    
     var scrollHeight = Math.max(300, viewportHeight - headerHeight - paginationHeight);
     
-    console.log('📐 Calculated scroll height:', scrollHeight, 'viewport:', viewportHeight);
+    console.log('📐 Calculated scroll height:', scrollHeight, 'viewport:', viewportWidth + 'x' + viewportHeight);
 
     var columnNames = [
         'Id', 'Nhóm', 'Tên', 'Giới tính', 'Tên đăng nhập',
@@ -92,7 +103,6 @@ window.initUserDataTable = function (selector) {
 
         drawCallback: function (settings) {
             console.log('📊 DataTable drawn');
-            // Bind events sau khi draw
             setTimeout(function () {
                 bindAllRowEvents(selector);
             }, 50);
@@ -106,7 +116,6 @@ window.initUserDataTable = function (selector) {
 
             createCustomToolbar(api, wrapper, columnNames, totalColumns);
 
-            // Set default page size từ localStorage
             var savedPageSize = localStorage.getItem('userTablePageSize');
             if (!savedPageSize) {
                 savedPageSize = '10';
@@ -124,11 +133,9 @@ window.initUserDataTable = function (selector) {
                 createColumnMenu(column, header, index, api);
             });
 
-            // Logic đóng dropdown - chỉ đóng khi click NGOÀI hoàn toàn
             $(document).off('click.dtUserMenu').on('click.dtUserMenu', function (e) {
                 var $target = $(e.target);
 
-                // Không đóng nếu click vào dropdown hoặc input filter
                 if ($target.closest('.dt-column-dropdown').length > 0) {
                     return;
                 }
@@ -176,15 +183,32 @@ window.initUserDataTable = function (selector) {
         }
     });
 
-    // RESPONSIVE: Handle window resize
+    // RESPONSIVE: Handle window resize với debounce
+    var resizeTimeout;
     $(window).off('resize.dtUserResize').on('resize.dtUserResize', function() {
-        var newViewportHeight = $(window).height();
-        var newScrollHeight = Math.max(300, newViewportHeight - headerHeight - paginationHeight);
-        
-        var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-        scrollBody.css('max-height', newScrollHeight + 'px');
-        
-        table.columns.adjust();
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            var newViewportHeight = $(window).height();
+            var newViewportWidth = $(window).width();
+            var newHeaderHeight = 200;
+            var newPaginationHeight = 60;
+            
+            // Responsive adjustments
+            if (newViewportWidth < 768) {
+                newHeaderHeight = 250;
+                newPaginationHeight = 80;
+            } else if (newViewportWidth < 992) {
+                newHeaderHeight = 220;
+                newPaginationHeight = 70;
+            }
+            
+            var newScrollHeight = Math.max(300, newViewportHeight - newHeaderHeight - newPaginationHeight);
+            
+            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+            scrollBody.css('max-height', newScrollHeight + 'px');
+            
+            table.columns.adjust();
+        }, 250);
     });
 
     console.log('✅ UserDataTable initialized successfully');
@@ -440,100 +464,41 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
 function createColumnMenu(column, header, index, api) {
     var menuBtn = $('<span class="dt-column-menu" title="Menu" style="cursor: pointer; margin-left: 8px;"><i class="feather icon-menu"></i></span>');
 
+    // Khởi tạo dropdown 
     var dropdown = $(`
-        <div class="dt-column-dropdown" data-column-index="${index}" style="
-            position: absolute;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 99999;
-            min-width: 250px;
-            display: none;
-        ">
-            <div class="dt-dropdown-item dt-sort-asc" style="
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                transition: background 0.2s;
-            ">
-                <i class="feather icon-arrow-up"></i>
-                <span>Sắp xếp tăng dần</span>
-            </div>
-            <div class="dt-dropdown-item dt-sort-desc" style="
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                transition: background 0.2s;
-            ">
-                <i class="feather icon-arrow-down"></i>
-                <span>Sắp xếp giảm dần</span>
-            </div>
-            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
-            <div class="dt-dropdown-section" style="padding: 10px 16px;">
-                <label class="dt-dropdown-label" style="
-                    display: block;
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: #6c757d;
-                    text-transform: uppercase;
-                    margin-bottom: 6px;
-                ">Kiểu lọc</label>
-                <select class="dt-filter-type form-control form-control-sm" style="
-                    width: 100%;
-                    padding: 6px 10px;
-                    border: 1px solid #ced4da;
-                    border-radius: 4px;
-                    font-size: 13px;
-                    background: #fff;
-                    cursor: pointer;
-                ">
-                    <option value="contains">Chứa (Contains)</option>
-                    <option value="equals">Bằng (Equals)</option>
-                    <option value="startswith">Bắt đầu bằng (Starts With)</option>
-                    <option value="endswith">Kết thúc bằng (Ends With)</option>
-                </select>
-            </div>
-            <div class="dt-dropdown-filter" style="padding: 10px 16px;">
-                <input type="text" class="dt-filter-input form-control form-control-sm" placeholder="Nhập giá trị lọc..." style="
-                    width: 100%;
-                    padding: 8px 12px;
-                    border: 1px solid #ced4da;
-                    border-radius: 4px;
-                    font-size: 13px;
-                ">
-            </div>
-            <div class="dt-dropdown-item dt-clear-filter" style="
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                transition: background 0.2s;
-                color: #dc3545;
-                border-top: 1px solid #eee;
-            ">
-                <i class="feather icon-x-circle"></i>
-                <span>Xóa bộ lọc</span>
-            </div>
-            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
-            <div class="dt-dropdown-item dt-hide-column" style="
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                transition: background 0.2s;
-            ">
-                <i class="feather icon-eye-off"></i>
-                <span>Ẩn cột này</span>
-            </div>
+    <div class="dt-column-dropdown" data-column-index="${index}">
+        <div class="dt-dropdown-item dt-sort-asc">
+            <i class="feather icon-arrow-up"></i>
+            <span>Sắp xếp tăng dần</span>
         </div>
-    `);
+        <div class="dt-dropdown-item dt-sort-desc">
+            <i class="feather icon-arrow-down"></i>
+            <span>Sắp xếp giảm dần</span>
+        </div>
+        <div class="dt-dropdown-divider"></div>
+        <div class="dt-dropdown-section">
+            <label class="dt-dropdown-label">Kiểu lọc</label>
+            <select class="dt-filter-type form-control form-control-sm">
+                <option value="contains">Chứa (Contains)</option>
+                <option value="equals">Bằng (Equals)</option>
+                <option value="startswith">Bắt đầu bằng (Starts With)</option>
+                <option value="endswith">Kết thúc bằng (Ends With)</option>
+            </select>
+        </div>
+        <div class="dt-dropdown-filter">
+            <input type="text" class="dt-filter-input form-control form-control-sm" placeholder="Nhập giá trị lọc...">
+        </div>
+        <div class="dt-dropdown-item dt-clear-filter">
+            <i class="feather icon-x-circle"></i>
+            <span>Xóa bộ lọc</span>
+        </div>
+        <div class="dt-dropdown-divider"></div>
+        <div class="dt-dropdown-item dt-hide-column">
+            <i class="feather icon-eye-off"></i>
+            <span>Ẩn cột này</span>
+        </div>
+    </div>
+`); 
 
     header.append(menuBtn);
     $('body').append(dropdown);
@@ -823,12 +788,12 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 };
 
 // ==========================================
-// ROW ANIMATIONS - FIXED VERSION
+// ROW ANIMATIONS - IMPROVED VERSION
 // ==========================================
 window.addUserRowSmooth = function (selector, userId) {
     console.log('🎬 addUserRowSmooth called for:', userId);
     
-    // Tăng delay lên 800ms để đảm bảo row đã được render
+    // Tăng delay để đảm bảo row đã render và DataTable đã xử lý xong
     setTimeout(function() {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
         
@@ -857,11 +822,14 @@ window.addUserRowSmooth = function (selector, userId) {
             }, 2000);
         } else {
             console.warn('⚠️ Row not found for add userId:', userId);
-            // Retry sau 500ms nữa
-            setTimeout(function() {
+            // Retry nhiều lần hơn với delay tăng dần
+            var retryCount = 0;
+            var retryInterval = setInterval(function() {
+                retryCount++;
                 var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
                 if ($retryRow.length > 0) {
-                    console.log('✅ Found row on retry for userId:', userId);
+                    console.log('✅ Found row on retry #' + retryCount + ' for userId:', userId);
+                    clearInterval(retryInterval);
                     $retryRow.css({
                         'background-color': '#d4edda',
                         'transition': 'background-color 2s ease'
@@ -869,16 +837,19 @@ window.addUserRowSmooth = function (selector, userId) {
                     setTimeout(function() {
                         $retryRow.css('background-color', '');
                     }, 2000);
+                } else if (retryCount >= 5) {
+                    console.error('❌ Failed to find row after 5 retries for userId:', userId);
+                    clearInterval(retryInterval);
                 }
-            }, 500);
+            }, 200);
         }
-    }, 800);
+    }, 1000); // Tăng từ 800ms lên 1000ms
 };
 
 window.updateUserRowSmooth = function (selector, userId) {
     console.log('🎬 updateUserRowSmooth called for:', userId);
     
-    // Tăng delay lên 800ms
+    // Tăng delay để đảm bảo DataTable đã update xong
     setTimeout(function() {
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
         
@@ -907,11 +878,14 @@ window.updateUserRowSmooth = function (selector, userId) {
             }, 1500);
         } else {
             console.warn('⚠️ Row not found for update userId:', userId);
-            // Retry sau 500ms nữa
-            setTimeout(function() {
+            // Retry nhiều lần hơn với delay tăng dần
+            var retryCount = 0;
+            var retryInterval = setInterval(function() {
+                retryCount++;
                 var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
                 if ($retryRow.length > 0) {
-                    console.log('✅ Found row on retry for userId:', userId);
+                    console.log('✅ Found row on retry #' + retryCount + ' for userId:', userId);
+                    clearInterval(retryInterval);
                     $retryRow.css({
                         'background-color': '#fff3cd',
                         'transition': 'background-color 1.5s ease'
@@ -919,10 +893,13 @@ window.updateUserRowSmooth = function (selector, userId) {
                     setTimeout(function() {
                         $retryRow.css('background-color', '');
                     }, 1500);
+                } else if (retryCount >= 5) {
+                    console.error('❌ Failed to find row after 5 retries for userId:', userId);
+                    clearInterval(retryInterval);
                 }
-            }, 500);
+            }, 200);
         }
-    }, 800);
+    }, 1000); // Tăng từ 800ms lên 1000ms
 };
 
 window.deleteUserRowSmooth = function(selector, userId) {
@@ -938,6 +915,7 @@ window.deleteUserRowSmooth = function(selector, userId) {
         console.warn('⚠️ Row not found for delete userId:', userId);
     }
 };
+
 // ==========================================
 // HELPER FUNCTIONS FOR ROW RENDERING
 // ==========================================
