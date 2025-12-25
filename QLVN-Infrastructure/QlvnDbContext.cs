@@ -800,7 +800,7 @@ public partial class QlvnDbContext : DbContext
             entity.Property(e => e.Image).HasMaxLength(200);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Note).HasMaxLength(100);
-            entity.Property(e => e.Password).HasMaxLength(50);
+            entity.Property(e => e.Password).HasMaxLength(200);
             entity.Property(e => e.Phone).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")

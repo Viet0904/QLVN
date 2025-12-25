@@ -16,12 +16,23 @@
 
 .dt-scroll-head {
     background: #f8f9fa !important;
+    overflow: hidden !important; /* FIX 2: Prevent head scroll */
 }
 
+/* FIX 2: Scroll body - ngăn giật */
 .dt-scroll-body {
     max-height: 400px;
     overflow-y: auto !important;
     overflow-x: auto !important;
+    /* FIX 2: Smooth scroll */
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* FIX 2: Ngăn scroll sync gây giật */
+.dataTables_scrollBody {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
 }
 
 /* Responsive height theo viewport */
@@ -168,7 +179,7 @@ table.dataTable tfoot th {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-    z-index: 9999;
+    z-index: 99999; /* Tăng z-index */
     padding: 8px 0;
 }
 
@@ -221,6 +232,7 @@ table.dataTable tfoot th {
     margin-bottom: 6px;
 }
 
+/* FIX 5: Filter type select */
 .dt-filter-type {
     width: 100%;
     padding: 8px 10px;
@@ -234,12 +246,14 @@ table.dataTable tfoot th {
     .dt-filter-type:focus {
         border-color: #01a9ac;
         outline: none;
+        box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
     }
 
 .dt-dropdown-filter {
     padding: 8px 16px;
 }
 
+/* FIX 5: Filter input - không bị tự động đóng */
 .dt-filter-input {
     width: 100%;
     padding: 8px 12px;
@@ -251,6 +265,7 @@ table.dataTable tfoot th {
     .dt-filter-input:focus {
         border-color: #01a9ac;
         outline: none;
+        box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
     }
 
 .dt-clear-filter {
@@ -316,25 +331,31 @@ table.dataTable tfoot th {
     overflow: visible !important;
 }
 
-/* Custom scrollbar */
+/* FIX 2: Custom scrollbar - smooth */
 .dt-scroll-body::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 .dt-scroll-body::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
 .dt-scroll-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+    background: #c1c1c1;
+    border-radius: 5px;
+    border: 2px solid #f1f1f1;
 }
 
     .dt-scroll-body::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: #888;
     }
+
+/* FIX 2: Scrollbar corner */
+.dt-scroll-body::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+}
 
 /* === ROW STYLES === */
 table.dataTable tbody tr:nth-child(odd) {
@@ -608,89 +629,6 @@ table.dataTable tbody tr.selected {
     align-items: center;
 }
 
-
-
-/* Row highlight animations */
-.row-highlight-new {
-    animation: highlightNew 2s ease-out;
-}
-
-.row-highlight-update {
-    animation: highlightUpdate 2s ease-out;
-}
-
-.row-highlight-delete {
-    animation: highlightDelete 0.3s ease-out;
-    opacity: 0;
-    transform: translateX(-20px);
-}
-
-@keyframes highlightNew {
-    0% {
-        background-color: #d4edda !important;
-        transform: scale(1.02);
-    }
-
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-}
-
-@keyframes highlightUpdate {
-    0% {
-        background-color: #fff3cd !important;
-    }
-
-    100% {
-        background-color: transparent;
-    }
-}
-
-@keyframes highlightDelete {
-    0% {
-        background-color: #f8d7da !important;
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    100% {
-        background-color: #f8d7da !important;
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-}
-
-/* Modal styles */
-.modal-header.bg-danger {
-    background-color: #dc3545 !important;
-}
-
-    .modal-header.bg-danger .close {
-        color: white;
-        opacity: 1;
-    }
-
-/* Spinner in button */
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-    border-width: 0.2em;
-}
-
-/* Form validation */
-.form-control.is-invalid {
-    border-color: #dc3545;
-}
-
-.text-danger {
-    font-size: 0.875em;
-}
-
-
-
-/* Thêm vào cuối file */
-
 /* Button Thêm Mới trong toolbar */
 .dt-add-new-btn {
     margin-left: 15px;
@@ -705,13 +643,6 @@ table.dataTable tbody tr.selected {
     .dt-add-new-btn i {
         font-size: 14px;
     }
-
-/* Cập nhật toolbar right để căn chỉnh */
-.dt-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
 
 /* Delete Modal - Larger size */
 #deleteUserModal .modal-dialog {
@@ -751,164 +682,52 @@ table.dataTable tbody tr.selected {
         padding: 8px 20px;
     }
 
-/* Row highlight animations */
-.row-highlight-new {
-    animation: highlightNew 2s ease-out;
-}
-
-.row-highlight-update {
-    animation: highlightUpdate 2s ease-out;
-}
-
-.row-highlight-delete {
-    animation: highlightDelete 0.3s ease-out;
-    opacity: 0;
-    transform: translateX(-20px);
-}
-
-@keyframes highlightNew {
+/* Row Animation Effects - Smooth */
+@keyframes rowAddedSmooth {
     0% {
-        background-color: #d4edda !important;
-        transform: scale(1.01);
-    }
-
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-}
-
-@keyframes highlightUpdate {
-    0% {
-        background-color: #fff3cd !important;
-    }
-
-    100% {
-        background-color: transparent;
-    }
-}
-
-@keyframes highlightDelete {
-    0% {
-        background-color: #f8d7da !important;
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    100% {
-        background-color: #f8d7da !important;
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-}
-
-
-/* Row Animation Effects */
-@keyframes rowAdded {
-    0% {
+        opacity: 0.5;
         background-color: #d4edda;
-        transform: scale(1.01);
     }
-
     100% {
+        opacity: 1;
         background-color: transparent;
-        transform: scale(1);
     }
 }
 
-@keyframes rowUpdated {
-    0% {
+@keyframes rowUpdatedSmooth {
+    0%, 50% {
         background-color: #fff3cd;
     }
-
     100% {
         background-color: transparent;
     }
 }
 
-@keyframes rowRemoving {
+@keyframes rowRemovingSmooth {
     0% {
         opacity: 1;
-        background-color: #f8d7da;
     }
-
     100% {
         opacity: 0;
-        height: 0;
-        padding: 0;
-        margin: 0;
+        transform: translateX(50px);
     }
 }
 
 .row-added {
-    animation: rowAdded 2s ease-out;
+    animation: rowAddedSmooth 1s ease-out;
 }
 
 .row-updated {
-    animation: rowUpdated 2s ease-out;
+    animation: rowUpdatedSmooth 1.2s ease-out;
 }
 
 .row-removing {
-    animation: rowRemoving 0.3s ease-out forwards;
+    animation: rowRemovingSmooth 0.3s ease-out forwards;
 }
 
-/* Smooth transition for all rows */
+/* FIX 4: Smooth transitions for rows - không giật khi chuyển trang */
 #userDataTable tbody tr {
-    transition: background-color 0.3s ease;
-}
-
-/* DataTable Row Animations */
-@keyframes rowAdded {
-    0% {
-        background-color: #d4edda;
-        transform: scale(1.02);
-    }
-
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-}
-
-@keyframes rowUpdated {
-    0% {
-        background-color: #fff3cd;
-        transform: scale(1.01);
-    }
-
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-}
-
-@keyframes rowRemoving {
-    0% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translateX(100px);
-    }
-}
-
-.row-added {
-    animation: rowAdded 1.5s ease-out;
-}
-
-.row-updated {
-    animation: rowUpdated 1.2s ease-out;
-}
-
-.row-removing {
-    animation: rowRemoving 0.4s ease-out forwards;
-}
-
-/* Smooth transitions */
-#userDataTable tbody tr {
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
     #userDataTable tbody tr:hover {
@@ -920,165 +739,68 @@ table.dataTable tbody tr.selected {
         background-color: #e3f2fd !important;
     }
 
-/* Loading overlay */
-.dt-processing {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 2px solid #4680ff !important;
-    border-radius: 8px !important;
-    padding: 20px 30px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-    z-index: 99999 !important;
-}
-
-
-
-
-/* ==========================================
-   SMOOTH TRANSITIONS - NO FLICKERING
-   ========================================== */
-
-/* Prevent layout shift during updates */
+/* FIX 1: Table layout - ngăn UI bị lỗi khi hiện/ẩn cột */
 #userDataTable {
-    table-layout: fixed;
+    width: 100% !important;
 }
 
-    /* Smooth row animations */
-    #userDataTable tbody tr {
-        transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
-        will-change: opacity, transform;
+    #userDataTable th,
+    #userDataTable td {
+        box-sizing: border-box;
     }
 
-/* Row added animation - Smooth fade in */
-@keyframes rowAddedSmooth {
-    0% {
-        opacity: 0;
-        transform: translateX(-20px) scale(0.98);
-        background-color: #d4edda;
-    }
-
-    50% {
-        background-color: #c3e6cb;
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-        background-color: transparent;
-    }
+/* FIX 4: Pagination smooth */
+.dt-custom-pagination {
+    padding: 15px 0;
+    border-top: 1px solid #e9ecef;
+    margin-top: 10px;
 }
 
-.row-added {
-    animation: rowAddedSmooth 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Row updated animation - Gentle pulse */
-@keyframes rowUpdatedSmooth {
-    0%, 100% {
-        background-color: transparent;
-        transform: scale(1);
+    .dt-custom-pagination button {
+        transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
-    25% {
-        background-color: #fff3cd;
-        transform: scale(1.005);
-    }
+        .dt-custom-pagination button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
 
-    75% {
-        background-color: #fff3cd;
-        transform: scale(1.005);
-    }
-}
+        .dt-custom-pagination button:active:not(:disabled) {
+            transform: translateY(0);
+        }
 
-.row-updated {
-    animation: rowUpdatedSmooth 1.5s ease-in-out;
-}
-
-/* Row removing animation - Smooth slide out */
-@keyframes rowRemovingSmooth {
-    0% {
-        opacity: 1;
-        transform: translateX(0);
-        max-height: 60px;
-    }
-
-    50% {
-        background-color: #f8d7da;
-        transform: translateX(10px);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translateX(100px);
-        max-height: 0;
-        padding-top: 0;
-        padding-bottom: 0;
-    }
-}
-
-.row-removing {
-    animation: rowRemovingSmooth 0.4s ease-out forwards;
-    overflow: hidden;
-}
-
-/* Smooth hover */
-#userDataTable tbody tr:hover {
-    background-color: #f8f9fa !important;
-    transform: translateX(2px);
-    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.05);
-}
-
-/* Prevent flash of unstyled content */
-#userDataTable tbody {
+/* Loading state - không giật */
+.table-responsive {
+    position: relative;
     min-height: 200px;
 }
 
-/* Loading state - no jerky */
-.table-responsive {
-    position: relative;
-    min-height: 300px;
+/* Modal styles */
+.modal-header.bg-danger {
+    background-color: #dc3545 !important;
 }
 
-/* Smooth search input */
-.dt-custom-search {
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-    .dt-custom-search:focus {
-        border-color: #4680ff !important;
-        box-shadow: 0 0 0 0.2rem rgba(70, 128, 255, 0.25) !important;
+    .modal-header.bg-danger .close {
+        color: white;
+        opacity: 1;
     }
 
-/* Pagination smooth */
-.dt-custom-pagination button {
-    transition: all 0.2s ease;
+/* Spinner in button */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
 }
 
-    .dt-custom-pagination button:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-/* GPU acceleration for better performance */
-.row-added,
-.row-updated,
-.row-removing,
-#userDataTable tbody tr {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    perspective: 1000px;
-    -webkit-perspective: 1000px;
+/* Form validation */
+.form-control.is-invalid {
+    border-color: #dc3545;
 }
 
-    /* Reduce paint operations */
-    #userDataTable tbody tr * {
-        pointer-events: auto;
-    }
+.text-danger {
+    font-size: 0.875em;
+}
 
-/* Optimize re-paint area */
+/* Optimize performance */
 .card-block {
-    contain: layout style paint;
+    contain: layout style;
 }

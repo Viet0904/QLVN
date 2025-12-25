@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using QLVN_Application.Interfaces;
 using QLVN_Contracts.Dtos.Common;
 using QLVN_Contracts.Dtos.User;
@@ -12,24 +13,61 @@ namespace QLVN_API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        public UserController(IUserService uservice) => _userService = uservice;
+        private readonly ILogger<UserController> _logger;
+
+        public UserController(IUserService uservice, ILogger<UserController> logger)
+        {
+            _userService = uservice;
+            _logger = logger;
+        }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
+        public async Task<IActionResult> GetAll()
+        {
+            try
+            {
+                return Ok(await _userService.GetAllAsync());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all users");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách người dùng", error = ex.Message });
+            }
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            var user = await _userService.GetByIdAsync(id);
-            if (user == null)
-                return NotFound(new { message = $"Không tìm thấy người dùng với ID: {id}" });
-            return Ok(user);
+            try
+            {
+                var user = await _userService.GetByIdAsync(id);
+                if (user == null)
+                    return NotFound(new { message = $"Không tìm thấy người dùng với ID: {id}" });
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by id: {Id}", id);
+                return StatusCode(500, new { message = "Lỗi khi lấy thông tin người dùng", error = ex.Message });
+            }
         }
+
         [HttpGet("paginated")]
         public async Task<IActionResult> GetPaginated([FromQuery] PaginatedRequest request)
         {
-            var result = await _userService.GetPaginatedAsync(request);
-            return Ok(result);
+            try
+            {
+                _logger.LogInformation("GetPaginated called with PageNumber={PageNumber}, PageSize={PageSize}",
+                    request.PageNumber, request.PageSize);
+
+                var result = await _userService.GetPaginatedAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting paginated users");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách người dùng phân trang", error = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -47,23 +85,47 @@ namespace QLVN_API.Controllers
             }
             catch (Exception ex)
             {
-                // Lỗi không mong đợi
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo người dùng." });
+                _logger.LogError(ex, "Error creating user");
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo người dùng", error = ex.Message });
             }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateUserRequest request)
         {
-            var updatedUser = await _userService.UpdateAsync(id, request);
-            return Ok(updatedUser);
+            try
+            {
+                var updatedUser = await _userService.UpdateAsync(id, request);
+                return Ok(updatedUser);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user: {Id}", id);
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật người dùng", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            await _userService.DeleteAsync(id);
-            return NoContent();
+            try
+            {
+                await _userService.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting user: {Id}", id);
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa người dùng", error = ex.Message });
+            }
         }
     }
 }
