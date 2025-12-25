@@ -38,7 +38,7 @@ window.initUserDataTable = function (selector) {
 
     const table = $(selector).DataTable({
         responsive: false,
-        searching: true,
+        searching: false, // Tắt search của DataTables, sử dụng custom search
         ordering: true,
         info: false,
         paging: false,
@@ -69,6 +69,7 @@ window.initUserDataTable = function (selector) {
 
         language: {
             zeroRecords: "Không tìm thấy dữ liệu phù hợp",
+            emptyTable: "Đang tải dữ liệu...",
             paginate: {
                 first: '«',
                 last: '»',
@@ -86,7 +87,10 @@ window.initUserDataTable = function (selector) {
 
         drawCallback: function (settings) {
             console.log('📊 DataTable drawn');
-            bindAllRowEvents(selector);
+            // Bind events sau khi draw
+            setTimeout(function() {
+                bindAllRowEvents(selector);
+            }, 50);
         },
 
         initComplete: function () {
@@ -114,8 +118,6 @@ window.initUserDataTable = function (selector) {
 
                 createColumnMenu(column, header, index, api);
             });
-
-            bindAllRowEvents(selector);
 
             // Logic đóng dropdown - chỉ đóng khi click NGOÀI hoàn toàn
             $(document).off('click.dtUserMenu').on('click.dtUserMenu', function (e) {
@@ -171,6 +173,7 @@ window.initUserDataTable = function (selector) {
     $(window).off('resize.dtUserResize');
 
     console.log('✅ UserDataTable initialized successfully');
+    return table;
 };
 
 // ==========================================
@@ -336,10 +339,16 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         console.log('✅ All columns shown');
     });
 
-    // Page length change
+    // Page length change - FIX: không gọi Blazor nếu đang xử lý
+    var isChangingPageSize = false;
     wrapper.find('.dt-page-length').off('change').on('change', function (e) {
         e.stopPropagation();
         e.preventDefault();
+        
+        if (isChangingPageSize) {
+            console.log('⚠️ Page size change in progress, skipping');
+            return;
+        }
         
         var pageSize = parseInt($(this).val(), 10);
         
@@ -352,32 +361,48 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         localStorage.setItem('userTablePageSize', pageSize.toString());
 
         if (window.blazorInstance) {
+            isChangingPageSize = true;
             console.log('📊 Calling Blazor ChangePageSize:', pageSize);
             window.blazorInstance.invokeMethodAsync('ChangePageSize', pageSize)
                 .then(function() {
                     console.log('✅ Page size changed successfully to:', pageSize);
+                    isChangingPageSize = false;
                 })
                 .catch(function(err) {
                     console.error('❌ Page size change error:', err);
+                    isChangingPageSize = false;
                 });
         } else {
             console.warn('⚠️ Blazor instance not found');
         }
     });
 
-    // Search với debounce
+    // Search với debounce - FIX: không gọi Blazor nếu đang xử lý
     var searchTimeout;
+    var isSearching = false;
     wrapper.find('.dt-custom-search').on('input', function (e) {
         e.stopPropagation();
         var searchValue = $(this).val();
 
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(function () {
+            if (isSearching) {
+                console.log('⚠️ Search in progress, skipping');
+                return;
+            }
+            
             if (window.blazorInstance) {
+                isSearching = true;
                 console.log('🔍 Searching:', searchValue);
                 window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue || '')
-                    .then(function() { console.log('✅ Search completed'); })
-                    .catch(function(err) { console.error('❌ Search error:', err); });
+                    .then(function() { 
+                        console.log('✅ Search completed'); 
+                        isSearching = false;
+                    })
+                    .catch(function(err) { 
+                        console.error('❌ Search error:', err); 
+                        isSearching = false;
+                    });
             }
         }, 500);
     });
@@ -445,31 +470,6 @@ function createColumnMenu(column, header, index, api) {
                 <i class="feather icon-eye-off"></i>
                 <span>Ẩn cột này</span>
             </div>
-            <div class="dt-dropdown-divider" style="height: 1px; background: #eee; margin: 5px 0;"></div>
-            <div class="dt-dropdown-section" style="padding: 10px 16px;">
-                <label class="dt-dropdown-label" style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;">Kiểu lọc</label>
-                <select class="dt-filter-type form-select form-select-sm">
-                    <option value="contains">Chứa</option>
-                    <option value="equals">Bằng</option>
-                    <option value="starts">Bắt đầu với</option>
-                    <option value="ends">Kết thúc với</option>
-                </select>
-            </div>
-            <div class="dt-dropdown-filter" style="padding: 0 16px 10px;">
-                <input type="text" class="dt-filter-input form-control form-control-sm" placeholder="Nhập giá trị lọc...">
-            </div>
-            <div class="dt-dropdown-item dt-clear-filter" style="
-                padding: 10px 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                border-top: 1px solid #eee;
-                transition: background 0.2s;
-            ">
-                <i class="feather icon-x-circle"></i>
-                <span>Xóa bộ lọc</span>
-            </div>
         </div>
     `);
 
@@ -533,95 +533,19 @@ function createColumnMenu(column, header, index, api) {
         console.log('✅ Column hidden');
     });
 
-    var filterTimeout;
-    var $filterInput = dropdown.find('.dt-filter-input');
-    var $filterType = dropdown.find('.dt-filter-type');
-    
-    $filterInput.on('click mousedown mouseup focus blur keydown keyup keypress', function(e) {
-        e.stopPropagation();
-    });
-    
-    $filterInput.on('input', function(e) {
-        e.stopPropagation();
-        
-        clearTimeout(filterTimeout);
-        
-        var filterValue = $(this).val().trim();
-        var filterType = $filterType.val();
-        
-        filterTimeout = setTimeout(function() {
-            applyColumnFilter(column, filterType, filterValue);
-        }, 300);
-    });
-
-    $filterType.on('click mousedown mouseup focus change', function(e) {
-        e.stopPropagation();
-        
-        if (e.type === 'change') {
-            var filterValue = $filterInput.val().trim();
-            if (filterValue) {
-                var filterType = $(this).val();
-                applyColumnFilter(column, filterType, filterValue);
-            }
-        }
-    });
-
-    dropdown.find('.dt-clear-filter').on('click', function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        $filterInput.val('');
-        $filterType.val('contains');
-        column.search('').draw(false);
-        dropdown.hide();
-        
-        console.log('✅ Filter cleared for column', index);
-    });
-
-    dropdown.find('.dt-dropdown-section, .dt-dropdown-filter').on('click mousedown', function(e) {
-        e.stopPropagation();
-    });
-    
     dropdown.on('click mousedown', function(e) {
         e.stopPropagation();
     });
 }
 
-function applyColumnFilter(column, filterType, filterValue) {
-    if (!filterValue) {
-        column.search('').draw(false);
-        return;
-    }
-    
-    var regex = '';
-    var escapedValue = $.fn.dataTable.util.escapeRegex(filterValue);
-    
-    switch (filterType) {
-        case 'equals':
-            regex = '^' + escapedValue + '$';
-            break;
-        case 'starts':
-            regex = '^' + escapedValue;
-            break;
-        case 'ends':
-            regex = escapedValue + '$';
-            break;
-        case 'contains':
-        default:
-            regex = escapedValue;
-            break;
-    }
-    
-    column.search(regex, true, false).draw(false);
-    console.log('✅ Filter applied:', filterType, filterValue);
-}
-
 // ==========================================
-// BIND ROW EVENTS
+// BIND ROW EVENTS - FIX: Bind events ngay sau khi thêm row
 // ==========================================
 function bindAllRowEvents(selector) {
     var $table = $(selector);
     if (!$table.length) return;
+    
+    console.log('🔗 Binding row events for:', selector);
     
     $table.find('tbody tr').each(function () {
         bindRowActionEvents(this);
@@ -629,27 +553,37 @@ function bindAllRowEvents(selector) {
 }
 
 function bindRowActionEvents(rowNode) {
-    if (!rowNode || !window.blazorInstance) return;
+    if (!rowNode) return;
 
     var $row = $(rowNode);
     
-    $row.find('.btn-edit-user').off('click').on('click', function (e) {
+    // Unbind trước để tránh duplicate
+    $row.find('.btn-edit-user').off('click');
+    $row.find('.btn-delete-user').off('click');
+    
+    $row.find('.btn-edit-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var userId = $(this).data('user-id') || $row.data('user-id');
         if (userId && window.blazorInstance) {
             console.log('✏️ Edit user:', userId);
-            window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString());
+            window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString())
+                .catch(function(err) { console.error('❌ Edit error:', err); });
+        } else {
+            console.warn('⚠️ Cannot edit: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
     });
 
-    $row.find('.btn-delete-user').off('click').on('click', function (e) {
+    $row.find('.btn-delete-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var userId = $(this).data('user-id') || $row.data('user-id');
         if (userId && window.blazorInstance) {
             console.log('🗑️ Delete user:', userId);
-            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString());
+            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString())
+                .catch(function(err) { console.error('❌ Delete error:', err); });
+        } else {
+            console.warn('⚠️ Cannot delete: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
     });
 }
@@ -694,33 +628,36 @@ window.clearTableSelection = function (selector) {
     }
 };
 
-// Update data - cập nhật bảng qua DataTables API, không qua Blazor
+// ==========================================
+// UPDATE DATA - Core function
+// ==========================================
 window.updateUserDataTableData = function (selector, paginatedData) {
     var table = window.dataTableInstances[selector];
     if (!table) {
-        console.warn('DataTable not found for update');
+        console.warn('⚠️ DataTable not found for selector:', selector);
         return;
     }
 
     try {
-        console.log('📊 Updating DataTable with', paginatedData?.items?.length || 0, 'items');
+        var itemCount = paginatedData?.items?.length || 0;
+        console.log('📊 Updating DataTable with', itemCount, 'items');
         
         // Lưu scroll position
         var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
         var scrollTop = scrollBody.scrollTop();
         var scrollLeft = scrollBody.scrollLeft();
 
-        // Clear và add data
+        // Clear data hiện tại
         table.clear();
 
         if (paginatedData && paginatedData.items && paginatedData.items.length > 0) {
             paginatedData.items.forEach(function (user) {
                 var rowData = [
-                    user.id,
-                    user.groupId,
-                    user.name,
+                    user.id || '',
+                    user.groupId || '',
+                    user.name || '',
                     getUserGenderBadge(user.gender),
-                    user.userName,
+                    user.userName || '',
                     user.email || '',
                     user.phone || '',
                     user.cmnd || '',
@@ -735,55 +672,49 @@ window.updateUserDataTableData = function (selector, paginatedData) {
                     getUserActionButtons(user.id)
                 ];
 
-                // Add row với createdRow callback để set data-user-id
+                // Add row và set data-user-id
                 var rowNode = table.row.add(rowData).node();
                 $(rowNode).attr('data-user-id', user.id);
             });
         }
 
-        // Draw table
+        // Draw table - false để giữ vị trí
         table.draw(false);
 
-        // Restore scroll position
+        // Restore scroll và bind events
         setTimeout(function() {
             scrollBody.scrollTop(scrollTop);
             scrollBody.scrollLeft(scrollLeft);
             
-            // Bind events sau khi draw
+            // Bind events cho tất cả rows
             bindAllRowEvents(selector);
-        }, 50);
+            
+            console.log('✅ DataTable data updated successfully');
+        }, 100);
 
-        console.log('✅ DataTable data updated successfully');
     } catch (error) {
         console.error('❌ Error updating DataTable data:', error);
     }
 };
 
-// FIX 4: Hiệu ứng khi thêm row mới
+// ==========================================
+// ROW ANIMATIONS
+// ==========================================
 window.addUserRowSmooth = function (selector, userId) {
     console.log('🎬 addUserRowSmooth called for:', userId);
     
     setTimeout(function () {
-        var table = window.dataTableInstances[selector];
-        if (!table) {
-            console.warn('DataTable not found');
-            return;
-        }
-        
-        // Tìm row theo data-user-id
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
         
         if ($row.length > 0) {
             console.log('✅ Found row for animation:', userId);
             
-            // Thêm class highlight
             $row.addClass('row-added');
             $row.css({
                 'background-color': '#d4edda',
                 'transition': 'background-color 2s ease'
             });
             
-            // Xóa highlight sau 2 giây
             setTimeout(function () {
                 $row.removeClass('row-added');
                 $row.css('background-color', '');
@@ -794,31 +725,21 @@ window.addUserRowSmooth = function (selector, userId) {
     }, 200);
 };
 
-// FIX 4: Hiệu ứng khi cập nhật row
 window.updateUserRowSmooth = function (selector, userId) {
     console.log('🎬 updateUserRowSmooth called for:', userId);
     
     setTimeout(function () {
-        var table = window.dataTableInstances[selector];
-        if (!table) {
-            console.warn('DataTable not found');
-            return;
-        }
-        
-        // Tìm row theo data-user-id
         var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
         
         if ($row.length > 0) {
             console.log('✅ Found row for update animation:', userId);
             
-            // Thêm class highlight cho update
             $row.addClass('row-updated');
             $row.css({
                 'background-color': '#fff3cd',
                 'transition': 'background-color 1.5s ease'
             });
             
-            // Xóa highlight sau 1.5 giây
             setTimeout(function () {
                 $row.removeClass('row-updated');
                 $row.css('background-color', '');
@@ -829,7 +750,6 @@ window.updateUserRowSmooth = function (selector, userId) {
     }, 200);
 };
 
-// Hiệu ứng khi xóa row
 window.deleteUserRowSmooth = function (selector, userId) {
     console.log('🎬 deleteUserRowSmooth called for:', userId);
     
@@ -862,7 +782,6 @@ window.deleteUserRowSmooth = function (selector, userId) {
 // ==========================================
 // HELPER FUNCTIONS FOR ROW RENDERING
 // ==========================================
-
 function getUserGenderBadge(gender) {
     if (gender === 1) {
         return '<span class="badge bg-primary">Nam</span>';
