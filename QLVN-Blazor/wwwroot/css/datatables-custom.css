@@ -2,6 +2,64 @@
    CUSTOM DATATABLES - ALL ICONS ON RIGHT
    ============================================ */
 
+/* === FIX SORT ICONS - DATATABLES 2.x === */
+/* Override sort icons để hiển thị đúng mũi tên */
+table.dataTable thead > tr > th.dt-orderable-asc span.dt-column-order:before,
+table.dataTable thead > tr > th.dt-ordering-asc span.dt-column-order:before,
+table.dataTable thead > tr > td.dt-orderable-asc span.dt-column-order:before,
+table.dataTable thead > tr > td.dt-ordering-asc span.dt-column-order:before {
+    content: "▲" !important;
+    font-size: 10px !important;
+    opacity: 0.3 !important;
+}
+
+table.dataTable thead > tr > th.dt-orderable-desc span.dt-column-order:after,
+table.dataTable thead > tr > th.dt-ordering-desc span.dt-column-order:after,
+table.dataTable thead > tr > td.dt-orderable-desc span.dt-column-order:after,
+table.dataTable thead > tr > td.dt-ordering-desc span.dt-column-order:after {
+    content: "▼" !important;
+    font-size: 10px !important;
+    opacity: 0.3 !important;
+}
+
+/* Active sort - làm đậm icon đang active */
+table.dataTable thead > tr > th.dt-ordering-asc span.dt-column-order:before,
+table.dataTable thead > tr > td.dt-ordering-asc span.dt-column-order:before {
+    opacity: 1 !important;
+    color: #01a9ac !important;
+}
+
+table.dataTable thead > tr > th.dt-ordering-desc span.dt-column-order:after,
+table.dataTable thead > tr > td.dt-ordering-desc span.dt-column-order:after {
+    opacity: 1 !important;
+    color: #01a9ac !important;
+}
+
+/* Sort icon container */
+table.dataTable thead > tr > th span.dt-column-order,
+table.dataTable thead > tr > td span.dt-column-order {
+    position: absolute !important;
+    right: 30px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 12px !important;
+    height: 20px !important;
+    line-height: 1 !important;
+}
+
+table.dataTable thead > tr > th span.dt-column-order:before,
+table.dataTable thead > tr > th span.dt-column-order:after,
+table.dataTable thead > tr > td span.dt-column-order:before,
+table.dataTable thead > tr > td span.dt-column-order:after {
+    font-family: Arial, sans-serif !important;
+    display: block !important;
+    line-height: 1 !important;
+}
+
 /* === FIXED HEIGHT & SCROLLABLE TABLE === */
 .dataTables_wrapper {
     width: 100%;
@@ -130,36 +188,59 @@ table.dataTable thead th .dt-column-order {
     transform: translateY(-50%) !important;
     cursor: pointer;
     opacity: 0.5;
-    padding: 3px 5px;
+    padding: 2px 5px;
     border-radius: 3px;
     color: #6c757d;
-    font-size: 12px;
+    font-size: 16px;
+    font-weight: bold;
     line-height: 1;
     transition: all 0.2s;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
+    display: inline-block !important;
+    text-align: center;
+    margin: 0 !important;
+    z-index: 10;
+    background: transparent;
+    font-family: Arial, sans-serif;
+}
+
+.dt-column-menu i {
+    display: inline-block !important;
+    font-size: 14px !important;
+    color: #6c757d !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.dt-column-menu:hover {
+    opacity: 1;
+    background-color: rgba(1, 169, 172, 0.15);
+    color: #01a9ac;
+}
+
+/* Đảm bảo header có đủ padding cho cả sort icon và menu icon */
+table.dataTable thead th {
+    padding-right: 60px !important;
+    position: relative !important;
+}
+
+/* Sort icon position - dịch sang trái để nhường chỗ cho menu icon */
+table.dataTable thead th .dt-column-order {
+    position: absolute !important;
+    right: 30px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     margin: 0 !important;
 }
 
-    .dt-column-menu:hover {
-        opacity: 1;
-        background-color: rgba(1, 169, 172, 0.15);
-        color: #01a9ac;
-    }
-
-table.dataTable thead th {
-    padding-right: 50px !important;
+/* Column cuối cùng không cần icon */
+table.dataTable thead th:last-child {
+    padding-right: 12px !important;
 }
 
-    table.dataTable thead th:last-child {
-        padding-right: 12px !important;
-    }
-
-        table.dataTable thead th:last-child .dt-column-menu,
-        table.dataTable thead th:last-child .dt-column-order {
-            display: none !important;
-        }
+table.dataTable thead th:last-child .dt-column-menu,
+table.dataTable thead th:last-child .dt-column-order {
+    display: none !important;
+}
 
 table.dataTable tfoot th {
     background: #f8f9fa !important;

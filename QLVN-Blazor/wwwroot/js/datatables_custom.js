@@ -469,7 +469,8 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
 // CREATE COLUMN MENU - THÊM FILTER VỚI NHIỀU KIỂU
 // ==========================================
 function createColumnMenu(column, header, index, api) {
-    var menuBtn = $('<span class="dt-column-menu" title="Menu" style="cursor: pointer; margin-left: 8px;"><i class="feather icon-menu"></i></span>');
+    // Sử dụng Unicode ☰ thay vì feather icon để đảm bảo hiển thị
+    var menuBtn = $('<span class="dt-column-menu" title="Menu">☰</span>');
 
     // Khởi tạo dropdown 
     var dropdown = $(`
