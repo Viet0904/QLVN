@@ -524,23 +524,30 @@ table.dataTable tbody tr.selected {
    COLUMN VISIBILITY & MENU STYLES - FIXED COLORS
    ======================================== */
 
-/* Column visibility button */
+/* Column visibility button - ĐỔI MÀU TỪ ĐEN SANG XANH */
 .colvis-btn-custom {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: #6c757d;
-    border: none;
-    color: white;
+    background: #01a9ac !important;
+    border: 1px solid #01a9ac !important;
+    color: white !important;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.3s ease;
     white-space: nowrap;
 }
 
 .colvis-btn-custom:hover {
-    background: #5a6268;
+    background: #018f91 !important;
+    border-color: #018f91 !important;
+    color: white !important;
+}
+
+.colvis-btn-custom:focus {
+    box-shadow: 0 0 0 0.2rem rgba(1, 169, 172, 0.25) !important;
+    outline: none;
 }
 
 /* Dropdown menu - FIXED COLORS */
@@ -821,7 +828,7 @@ table.dataTable .btn-sm {
 }
 
 /* ========================================
-   ROW ANIMATION EFFECTS - ADD/EDIT/DELETE
+   ROW ANIMATION EFFECTS - ADD/EDIT/DELETE - IMPROVED
    ======================================== */
 
 /* Animation cho row mới được thêm */
@@ -829,10 +836,19 @@ table.dataTable .btn-sm {
     0% {
         background-color: #d4edda !important;
         transform: scale(1.01);
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+    }
+    25% {
+        background-color: #c3e6cb !important;
         box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
     }
     50% {
+        background-color: #d4edda !important;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+    }
+    75% {
         background-color: #c3e6cb !important;
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
     }
     100% {
         background-color: transparent;
@@ -846,10 +862,19 @@ table.dataTable .btn-sm {
     0% {
         background-color: #fff3cd !important;
         transform: scale(1.01);
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+    }
+    25% {
+        background-color: #ffeeba !important;
         box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
     }
     50% {
+        background-color: #fff3cd !important;
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+    }
+    75% {
         background-color: #ffeeba !important;
+        box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
     }
     100% {
         background-color: transparent;
@@ -868,57 +893,71 @@ table.dataTable .btn-sm {
     50% {
         opacity: 0.5;
         background-color: #f5c6cb !important;
-        transform: scale(0.98);
+        transform: scale(0.98) translateX(5px);
     }
     100% {
-        opacity: 0;
+        opacity: 0.2;
         transform: scale(0.95) translateX(20px);
-        height: 0;
-        padding: 0;
-        margin: 0;
     }
 }
 
 /* Class cho row animation */
 table.dataTable tbody tr.row-added {
-    animation: rowAddAnimation 2s ease-out;
+    animation: rowAddAnimation 2.5s ease-out;
+}
+
+table.dataTable tbody tr.row-added td {
+    background-color: inherit !important;
 }
 
 table.dataTable tbody tr.row-updated {
-    animation: rowUpdateAnimation 1.5s ease-out;
+    animation: rowUpdateAnimation 2s ease-out;
+}
+
+table.dataTable tbody tr.row-updated td {
+    background-color: inherit !important;
 }
 
 table.dataTable tbody tr.row-deleting {
     animation: rowDeleteAnimation 0.5s ease-out forwards;
 }
 
-/* Highlight styles - sử dụng với JS */
-table.dataTable tbody tr.highlight-add {
+/* Highlight styles - sử dụng với JS - FORCE IMPORTANT */
+table.dataTable tbody tr.highlight-add,
+table.dataTable tbody tr.highlight-add:hover {
     background-color: #d4edda !important;
-    transition: background-color 2s ease;
+    position: relative;
+    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-add td {
     background-color: #d4edda !important;
+    transition: background-color 0.3s ease;
 }
 
-table.dataTable tbody tr.highlight-update {
+table.dataTable tbody tr.highlight-update,
+table.dataTable tbody tr.highlight-update:hover {
     background-color: #fff3cd !important;
-    transition: background-color 1.5s ease;
+    position: relative;
+    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-update td {
     background-color: #fff3cd !important;
+    transition: background-color 0.3s ease;
 }
 
-table.dataTable tbody tr.highlight-delete {
+table.dataTable tbody tr.highlight-delete,
+table.dataTable tbody tr.highlight-delete:hover {
     background-color: #f8d7da !important;
     opacity: 0.7;
-    transition: all 0.4s ease;
+    position: relative;
+    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-delete td {
     background-color: #f8d7da !important;
+    transition: all 0.3s ease;
 }
 
 /* ========================================

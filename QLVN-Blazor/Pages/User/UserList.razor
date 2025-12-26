@@ -553,8 +553,8 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Hiệu ứng row mới - delay ngắn hơn
-                        await Task.Delay(200);
+                        // Gọi animation ngay - JS sẽ tự tìm row
+                        await Task.Delay(100);
                         await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
                     }
                     
@@ -604,8 +604,10 @@
                     // Đóng modal trước
                     await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
-                    // Reset form
+                    // Lưu userId để dùng cho animation
                     var updatedUserId = userFormModel.Id;
+                    
+                    // Reset form
                     userFormModel = new UserFormModel();
                     password = string.Empty;
                     confirmPassword = string.Empty;
@@ -619,8 +621,8 @@
                     {
                         await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
                         
-                        // Hiệu ứng row đã cập nhật - delay ngắn hơn
-                        await Task.Delay(200);
+                        // Gọi animation ngay - JS sẽ tự tìm row
+                        await Task.Delay(100);
                         await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
                     }
                     
@@ -652,14 +654,14 @@
 
         try
         {
-            // Hiệu ứng xóa row
+            // Hiệu ứng xóa row TRƯỚC khi xóa thật
             if (dataTableInitialized)
             {
                 await JS.InvokeVoidAsync("deleteUserRowSmooth", $"#{tableId}", idToDelete);
             }
-            await Task.Delay(400);
+            await Task.Delay(400); // Giảm xuống cho animation delete
 
-            // Đóng modal trước
+            // Đóng modal
             await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
 
             // Reset state

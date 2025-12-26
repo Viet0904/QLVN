@@ -230,10 +230,12 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         ">
             <div class="dt-toolbar-left" style="display: flex; gap: 15px; align-items: center;">
                 <div class="colvis-wrapper" style="position: relative;">
-                    <button type="button" class="btn btn-secondary btn-sm colvis-btn-custom" style="
+                    <button type="button" class="btn btn-primary btn-sm colvis-btn-custom" style="
                         display: flex;
                         align-items: center;
                         gap: 8px;
+                        background-color: #01a9ac;
+                        border-color: #01a9ac;
                     ">
                         <i class="feather icon-columns"></i>
                         <span>Cột Hiển Thị</span>
@@ -280,14 +282,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
                     </select>
                     <span style="font-size: 14px; color: #666;">bản ghi</span>
                 </div>
-            </div>
-            <div class="dt-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
-                <div class="dt-search-wrapper" style="display: flex; gap: 8px; align-items: center;">
-                    <label style="margin: 0; font-size: 14px; color: #666;">Tìm kiếm:</label>
-                    <input type="search" class="form-control form-control-sm dt-custom-search" 
-                        placeholder="Nhập từ khóa..." style="width: 250px;">
-                </div>
-                <button type="button" class="btn btn-primary btn-sm dt-add-new-btn" id="btnAddNewUser" style="
+                <button type="button" class="btn btn-success btn-sm dt-add-new-btn" id="btnAddNewUser" style="
                     display: flex;
                     align-items: center;
                     gap: 8px;
@@ -296,6 +291,13 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
                     <i class="feather icon-plus"></i>
                     <span>Thêm Mới</span>
                 </button>
+            </div>
+            <div class="dt-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
+                <div class="dt-search-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                    <label style="margin: 0; font-size: 14px; color: #666;">Tìm kiếm:</label>
+                    <input type="search" class="form-control form-control-sm dt-custom-search" 
+                        placeholder="Nhập từ khóa..." style="width: 250px;">
+                </div>
             </div>
         </div>
     `;
@@ -484,10 +486,10 @@ function createColumnMenu(column, header, index, api) {
         <div class="dt-dropdown-section">
             <label class="dt-dropdown-label">Kiểu lọc</label>
             <select class="dt-filter-type form-control form-control-sm">
-                <option value="contains">Chứa (Contains)</option>
-                <option value="equals">Bằng (Equals)</option>
-                <option value="startswith">Bắt đầu bằng (Starts With)</option>
-                <option value="endswith">Kết thúc bằng (Ends With)</option>
+                <option value="contains">Chứa</option>
+                <option value="equals">Bằng</option>
+                <option value="startswith">Bắt đầu bằng</option>
+                <option value="endswith">Kết thúc bằng</option>
             </select>
         </div>
         <div class="dt-dropdown-filter">
@@ -747,43 +749,70 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 
         if (paginatedData && paginatedData.items && paginatedData.items.length > 0) {
             paginatedData.items.forEach(function (user) {
+                // Xử lý cả camelCase và PascalCase từ JSON serialization
+                var userId = user.id || user.Id || '';
+                var groupId = user.groupId || user.GroupId || '';
+                var name = user.name || user.Name || '';
+                var gender = user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : null);
+                var userName = user.userName || user.UserName || '';
+                var email = user.email || user.Email || '';
+                var phone = user.phone || user.Phone || '';
+                var cmnd = user.cmnd || user.Cmnd || '';
+                var address = user.address || user.Address || '';
+                var image = user.image || user.Image || '';
+                var note = user.note || user.Note || '';
+                var rowStatus = user.rowStatus !== undefined ? user.rowStatus : (user.RowStatus !== undefined ? user.RowStatus : 1);
+                var createdAt = user.createdAt || user.CreatedAt || '';
+                var createdBy = user.createdBy || user.CreatedBy || '';
+                var updatedAt = user.updatedAt || user.UpdatedAt || '';
+                var updatedBy = user.updatedBy || user.UpdatedBy || '';
+                
                 var rowData = [
-                    user.id || '',
-                    user.groupId || '',
-                    user.name || '',
-                    getUserGenderBadge(user.gender),
-                    user.userName || '',
-                    user.email || '',
-                    user.phone || '',
-                    user.cmnd || '',
-                    user.address || '',
-                    getUserImageHtml(user.image),
-                    user.note || '',
-                    getUserStatusBadge(user.rowStatus),
-                    formatDateTime(user.createdAt),
-                    user.createdBy || '',
-                    formatDateTime(user.updatedAt),
-                    user.updatedBy || '',
-                    getUserActionButtons(user.id)
+                    userId,
+                    groupId,
+                    name,
+                    getUserGenderBadge(gender),
+                    userName,
+                    email,
+                    phone,
+                    cmnd,
+                    address,
+                    getUserImageHtml(image),
+                    note,
+                    getUserStatusBadge(rowStatus),
+                    formatDateTime(createdAt),
+                    createdBy,
+                    formatDateTime(updatedAt),
+                    updatedBy,
+                    getUserActionButtons(userId)
                 ];
 
                 // Add row và set data-user-id
                 var rowNode = table.row.add(rowData).node();
-                $(rowNode).attr('data-user-id', user.id);
+                if (rowNode && userId) {
+                    $(rowNode).attr('data-user-id', userId);
+                    console.log('📌 Set data-user-id:', userId, 'on row');
+                }
             });
         }
-        // Nếu không có data, DataTable sẽ tự hiện "Không có dữ liệu" - KHÔNG cần xử lý đặc biệt
 
-        // Draw table - false để giữ vị trí, KHÔNG bind events ngay
+        // Draw table - false để giữ vị trí
         table.draw(false);
 
-        // Restore scroll
+        // Restore scroll và bind events
         setTimeout(function () {
             scrollBody.scrollTop(scrollTop);
             scrollBody.scrollLeft(scrollLeft);
 
-            // QUAN TRỌNG: Bind events SAU khi draw xong
+            // Bind events SAU khi draw xong
             bindAllRowEvents(selector);
+            
+            // Log các row IDs để debug
+            var rowIds = [];
+            $(selector).find('tbody tr[data-user-id]').each(function() {
+                rowIds.push($(this).attr('data-user-id'));
+            });
+            console.log('📋 Current row IDs in table:', rowIds.slice(0, 5), '... total:', rowIds.length);
 
             console.log('✅ DataTable data updated and events bound');
         }, 100);
@@ -794,174 +823,291 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 };
 
 // ==========================================
-// ROW ANIMATIONS - IMPROVED VERSION với CSS classes
+// ROW ANIMATIONS - FAST VERSION - tìm row ngay trong DataTable
 // ==========================================
 window.addUserRowSmooth = function (selector, userId) {
     console.log('🎬 addUserRowSmooth called for:', userId);
     
-    // Đợi DataTable render xong
-    setTimeout(function() {
-        var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-        
-        if ($row.length > 0) {
-            console.log('✅ Found row for animation, userId:', userId);
-            
-            // Scroll đến row
-            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-            if (scrollBody.length > 0) {
-                var rowOffset = $row.position().top;
-                var scrollHeight = scrollBody.height();
-                if (rowOffset > scrollHeight || rowOffset < 0) {
-                    scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 50 }, 300);
+    var targetUserId = String(userId);
+    var table = window.dataTableInstances[selector];
+    
+    if (!table) {
+        console.warn('⚠️ DataTable not found');
+        return;
+    }
+    
+    // Tìm row trực tiếp trong DataTable API - nhanh hơn DOM selector
+    var foundRow = null;
+    table.rows().every(function() {
+        var rowNode = this.node();
+        if (rowNode) {
+            var rowId = $(rowNode).attr('data-user-id');
+            // So sánh với cột đầu tiên (ID) nếu không có attr
+            if (!rowId) {
+                var rowData = this.data();
+                if (rowData && rowData[0] == targetUserId) {
+                    $(rowNode).attr('data-user-id', targetUserId);
+                    rowId = targetUserId;
                 }
             }
-            
-            // Add animation class
-            $row.addClass('highlight-add row-added');
-            $row.find('td').css('background-color', '#d4edda');
-            
-            // Thêm box-shadow effect
-            $row.css({
-                'box-shadow': '0 0 15px rgba(40, 167, 69, 0.5)',
-                'position': 'relative',
-                'z-index': '10'
-            });
-            
-            setTimeout(function () {
-                $row.removeClass('highlight-add row-added');
-                $row.find('td').css('background-color', '');
-                $row.css({
-                    'box-shadow': '',
-                    'position': '',
-                    'z-index': ''
-                });
-            }, 2500);
-        } else {
-            console.warn('⚠️ Row not found for add userId:', userId);
-            // Retry với interval
-            var retryCount = 0;
-            var retryInterval = setInterval(function() {
-                retryCount++;
-                var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-                if ($retryRow.length > 0) {
-                    console.log('✅ Found row on retry #' + retryCount);
-                    clearInterval(retryInterval);
-                    
-                    $retryRow.addClass('highlight-add row-added');
-                    $retryRow.find('td').css('background-color', '#d4edda');
-                    $retryRow.css('box-shadow', '0 0 15px rgba(40, 167, 69, 0.5)');
-                    
-                    setTimeout(function() {
-                        $retryRow.removeClass('highlight-add row-added');
-                        $retryRow.find('td').css('background-color', '');
-                        $retryRow.css('box-shadow', '');
-                    }, 2500);
-                } else if (retryCount >= 8) {
-                    console.error('❌ Failed to find row after 8 retries');
-                    clearInterval(retryInterval);
-                }
-            }, 150);
+            if (rowId == targetUserId) {
+                foundRow = $(rowNode);
+                return false; // break
+            }
         }
-    }, 300);
+    });
+    
+    if (foundRow && foundRow.length > 0) {
+        console.log('✅ Found row for ADD animation immediately');
+        applyAddHighlight(foundRow, selector);
+    } else {
+        // Fallback: thử tìm bằng DOM sau 50ms
+        setTimeout(function() {
+            var $row = $(selector).find('tbody tr').filter(function() {
+                return $(this).find('td:first').text().trim() == targetUserId ||
+                       $(this).attr('data-user-id') == targetUserId;
+            });
+            if ($row.length > 0) {
+                $row.attr('data-user-id', targetUserId);
+                applyAddHighlight($row, selector);
+            } else {
+                console.warn('⚠️ Row not found for ADD userId:', targetUserId);
+            }
+        }, 50);
+    }
 };
 
 window.updateUserRowSmooth = function (selector, userId) {
     console.log('🎬 updateUserRowSmooth called for:', userId);
     
-    setTimeout(function() {
-        var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-        
-        if ($row.length > 0) {
-            console.log('✅ Found row for update animation, userId:', userId);
-            
-            // Scroll đến row
-            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-            if (scrollBody.length > 0) {
-                var rowOffset = $row.position().top;
-                var scrollHeight = scrollBody.height();
-                if (rowOffset > scrollHeight || rowOffset < 0) {
-                    scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 50 }, 300);
+    var targetUserId = String(userId);
+    var table = window.dataTableInstances[selector];
+    
+    if (!table) {
+        console.warn('⚠️ DataTable not found');
+        return;
+    }
+    
+    // Tìm row trực tiếp trong DataTable API
+    var foundRow = null;
+    table.rows().every(function() {
+        var rowNode = this.node();
+        if (rowNode) {
+            var rowId = $(rowNode).attr('data-user-id');
+            if (!rowId) {
+                var rowData = this.data();
+                if (rowData && rowData[0] == targetUserId) {
+                    $(rowNode).attr('data-user-id', targetUserId);
+                    rowId = targetUserId;
                 }
             }
-            
-            // Add animation class
-            $row.addClass('highlight-update row-updated');
-            $row.find('td').css('background-color', '#fff3cd');
-            
-            // Thêm box-shadow effect
-            $row.css({
-                'box-shadow': '0 0 15px rgba(255, 193, 7, 0.5)',
-                'position': 'relative',
-                'z-index': '10'
-            });
-            
-            setTimeout(function () {
-                $row.removeClass('highlight-update row-updated');
-                $row.find('td').css('background-color', '');
-                $row.css({
-                    'box-shadow': '',
-                    'position': '',
-                    'z-index': ''
-                });
-            }, 2000);
-        } else {
-            console.warn('⚠️ Row not found for update userId:', userId);
-            // Retry
-            var retryCount = 0;
-            var retryInterval = setInterval(function() {
-                retryCount++;
-                var $retryRow = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
-                if ($retryRow.length > 0) {
-                    console.log('✅ Found row on retry #' + retryCount);
-                    clearInterval(retryInterval);
-                    
-                    $retryRow.addClass('highlight-update row-updated');
-                    $retryRow.find('td').css('background-color', '#fff3cd');
-                    $retryRow.css('box-shadow', '0 0 15px rgba(255, 193, 7, 0.5)');
-                    
-                    setTimeout(function() {
-                        $retryRow.removeClass('highlight-update row-updated');
-                        $retryRow.find('td').css('background-color', '');
-                        $retryRow.css('box-shadow', '');
-                    }, 2000);
-                } else if (retryCount >= 8) {
-                    console.error('❌ Failed to find row after 8 retries');
-                    clearInterval(retryInterval);
-                }
-            }, 150);
+            if (rowId == targetUserId) {
+                foundRow = $(rowNode);
+                return false;
+            }
         }
-    }, 300);
+    });
+    
+    if (foundRow && foundRow.length > 0) {
+        console.log('✅ Found row for UPDATE animation immediately');
+        applyUpdateHighlight(foundRow, selector);
+    } else {
+        // Fallback
+        setTimeout(function() {
+            var $row = $(selector).find('tbody tr').filter(function() {
+                return $(this).find('td:first').text().trim() == targetUserId ||
+                       $(this).attr('data-user-id') == targetUserId;
+            });
+            if ($row.length > 0) {
+                $row.attr('data-user-id', targetUserId);
+                applyUpdateHighlight($row, selector);
+            } else {
+                console.warn('⚠️ Row not found for UPDATE userId:', targetUserId);
+            }
+        }, 50);
+    }
 };
 
 window.deleteUserRowSmooth = function(selector, userId) {
     console.log('🎬 deleteUserRowSmooth called for:', userId);
     
-    var $row = $(selector).find('tbody tr[data-user-id="' + userId + '"]');
+    var targetUserId = String(userId);
+    
+    // Tìm bằng attr hoặc text trong cột đầu tiên
+    var $row = $(selector).find('tbody tr').filter(function() {
+        return $(this).attr('data-user-id') == targetUserId ||
+               $(this).find('td:first').text().trim() == targetUserId;
+    });
+    
     if ($row.length > 0) {
-        console.log('✅ Animating delete for userId:', userId);
-        
-        // Add animation class
-        $row.addClass('highlight-delete row-deleting');
-        $row.find('td').css('background-color', '#f8d7da');
+        console.log('✅ Animating delete for userId:', targetUserId);
         
         $row.css({
-            'transition': 'all 0.4s ease',
-            'opacity': '0.6',
-            'transform': 'scale(0.98)',
-            'box-shadow': '0 0 10px rgba(220, 53, 69, 0.4)'
+            'transition': 'all 0.4s ease-out',
+            'position': 'relative',
+            'z-index': '10',
+            'box-shadow': '0 0 15px rgba(220, 53, 69, 0.5)'
+        });
+        $row.find('td').css({
+            'transition': 'background-color 0.3s ease-out',
+            'background-color': '#f8d7da'
         });
         
-        // Fade out animation
         setTimeout(function() {
             $row.css({
-                'opacity': '0.3',
-                'transform': 'scale(0.95) translateX(10px)'
+                'opacity': '0.5',
+                'transform': 'scale(0.98) translateX(10px)'
             });
-        }, 200);
+        }, 150);
+        
+        setTimeout(function() {
+            $row.css({
+                'opacity': '0.2',
+                'transform': 'scale(0.95) translateX(20px)'
+            });
+        }, 300);
     } else {
-        console.warn('⚠️ Row not found for delete userId:', userId);
+        console.warn('⚠️ Row not found for delete userId:', targetUserId);
     }
 };
+
+// Helper function cho ADD highlight
+function applyAddHighlight($row, selector) {
+    // Scroll đến row
+    var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+    if (scrollBody.length > 0) {
+        var rowOffset = $row.position().top;
+        var scrollHeight = scrollBody.height();
+        if (rowOffset > scrollHeight || rowOffset < 0) {
+            scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 50 }, 300);
+        }
+    }
+    
+    // Reset trước
+    $row.css({
+        'transition': 'none',
+        'background-color': '',
+        'box-shadow': '',
+        'transform': ''
+    });
+    $row.find('td').css({
+        'transition': 'none',
+        'background-color': ''
+    });
+    
+    // Force reflow
+    $row[0].offsetHeight;
+    
+    // Apply highlight effect - màu xanh lá cho add
+    $row.css({
+        'transition': 'all 0.3s ease-in-out',
+        'position': 'relative',
+        'z-index': '10',
+        'box-shadow': '0 0 20px rgba(40, 167, 69, 0.6)'
+    });
+    $row.find('td').css({
+        'transition': 'background-color 0.3s ease-in-out',
+        'background-color': '#d4edda'
+    });
+    
+    // Pulse animation
+    var pulseCount = 0;
+    var pulseInterval = setInterval(function() {
+        pulseCount++;
+        if (pulseCount % 2 === 0) {
+            $row.find('td').css('background-color', '#d4edda');
+        } else {
+            $row.find('td').css('background-color', '#c3e6cb');
+        }
+        if (pulseCount >= 4) {
+            clearInterval(pulseInterval);
+            $row.find('td').css('background-color', '#d4edda');
+        }
+    }, 300);
+    
+    // Remove effect after delay
+    setTimeout(function () {
+        $row.css({
+            'transition': 'all 0.5s ease-out',
+            'box-shadow': 'none',
+            'position': '',
+            'z-index': ''
+        });
+        $row.find('td').css({
+            'transition': 'background-color 0.5s ease-out',
+            'background-color': ''
+        });
+    }, 2500);
+}
+
+// Helper function cho UPDATE highlight  
+function applyUpdateHighlight($row, selector) {
+    // Scroll đến row
+    var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
+    if (scrollBody.length > 0) {
+        var rowOffset = $row.position().top;
+        var scrollHeight = scrollBody.height();
+        if (rowOffset > scrollHeight || rowOffset < 0) {
+            scrollBody.animate({ scrollTop: scrollBody.scrollTop() + rowOffset - 50 }, 300);
+        }
+    }
+    
+    // Reset trước
+    $row.css({
+        'transition': 'none',
+        'background-color': '',
+        'box-shadow': '',
+        'transform': ''
+    });
+    $row.find('td').css({
+        'transition': 'none',
+        'background-color': ''
+    });
+    
+    // Force reflow
+    $row[0].offsetHeight;
+    
+    // Apply highlight effect - màu vàng cho update
+    $row.css({
+        'transition': 'all 0.3s ease-in-out',
+        'position': 'relative',
+        'z-index': '10',
+        'box-shadow': '0 0 20px rgba(255, 193, 7, 0.6)'
+    });
+    $row.find('td').css({
+        'transition': 'background-color 0.3s ease-in-out',
+        'background-color': '#fff3cd'
+    });
+    
+    // Pulse animation
+    var pulseCount = 0;
+    var pulseInterval = setInterval(function() {
+        pulseCount++;
+        if (pulseCount % 2 === 0) {
+            $row.find('td').css('background-color', '#fff3cd');
+        } else {
+            $row.find('td').css('background-color', '#ffeeba');
+        }
+        if (pulseCount >= 4) {
+            clearInterval(pulseInterval);
+            $row.find('td').css('background-color', '#fff3cd');
+        }
+    }, 250);
+    
+    // Remove effect after delay
+    setTimeout(function () {
+        $row.css({
+            'transition': 'all 0.5s ease-out',
+            'box-shadow': 'none',
+            'position': '',
+            'z-index': ''
+        });
+        $row.find('td').css({
+            'transition': 'background-color 0.5s ease-out',
+            'background-color': ''
+        });
+    }, 2000);
+}
 
 // ==========================================
 // HELPER FUNCTIONS FOR ROW RENDERING
