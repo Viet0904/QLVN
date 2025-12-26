@@ -24,24 +24,12 @@ window.initUserDataTable = function (selector) {
     $('.colvis-dropdown-custom').remove();
     $('.dt-custom-toolbar').remove();
 
-    // RESPONSIVE: Tính toán height dựa trên viewport với breakpoints
-    var viewportHeight = $(window).height();
-    var viewportWidth = $(window).width();
-    var headerHeight = 200;
-    var paginationHeight = 60;
-    
-    // Responsive adjustments
-    if (viewportWidth < 768) { // Mobile
-        headerHeight = 250;
-        paginationHeight = 80;
-    } else if (viewportWidth < 992) { // Tablet
-        headerHeight = 220;
-        paginationHeight = 70;
+    // Xóa localStorage cũ để đảm bảo mặc định là 10 khi mới vào trang
+    // Chỉ lưu lại nếu user thực sự thay đổi
+    var currentPageSize = localStorage.getItem('userTablePageSize');
+    if (!currentPageSize || !['10', '25', '50', '100'].includes(currentPageSize)) {
+        localStorage.removeItem('userTablePageSize');
     }
-    
-    var scrollHeight = Math.max(300, viewportHeight - headerHeight - paginationHeight);
-    
-    console.log('📐 Calculated scroll height:', scrollHeight, 'viewport:', viewportWidth + 'x' + viewportHeight);
 
     var columnNames = [
         'Id', 'Nhóm', 'Tên', 'Giới tính', 'Tên đăng nhập',
@@ -59,9 +47,9 @@ window.initUserDataTable = function (selector) {
         info: false,
         paging: false,
         lengthChange: false,
-        scrollY: scrollHeight + 'px',
+        scrollY: 'calc(100vh - 320px)', // Sử dụng calc thay vì auto
         scrollX: true,
-        scrollCollapse: true,
+        scrollCollapse: true, // QUAN TRỌNG: true để table co lại khi ít dữ liệu
         autoWidth: false,
         fixedColumns: false,
         deferRender: true,
@@ -74,7 +62,7 @@ window.initUserDataTable = function (selector) {
 
         pageLength: 10,
         pagingType: "full_numbers",
-        order: [[0, "asc"], [1, "asc"]],
+        order: [[0, "asc"], [1, "asc"], [2, "asc"]],
 
         layout: {
             topStart: null,
@@ -116,12 +104,9 @@ window.initUserDataTable = function (selector) {
 
             createCustomToolbar(api, wrapper, columnNames, totalColumns);
 
-            var savedPageSize = localStorage.getItem('userTablePageSize');
-            if (!savedPageSize) {
-                savedPageSize = '10';
-                localStorage.setItem('userTablePageSize', '10');
-            }
-            wrapper.find('.dt-page-length').val(savedPageSize);
+            // Mặc định dropdown là 10 - sẽ được sync lại bởi updateUserDataTableData
+            wrapper.find('.dt-page-length').val('10');
+            console.log('📊 Initial dropdown set to 10 (will be synced from server)');
 
             api.columns().every(function (index) {
                 var column = this;
@@ -183,30 +168,12 @@ window.initUserDataTable = function (selector) {
         }
     });
 
-    // RESPONSIVE: Handle window resize với debounce
+    // RESPONSIVE: Handle window resize - chỉ cần adjust columns
     var resizeTimeout;
     $(window).off('resize.dtUserResize').on('resize.dtUserResize', function() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function() {
-            var newViewportHeight = $(window).height();
-            var newViewportWidth = $(window).width();
-            var newHeaderHeight = 200;
-            var newPaginationHeight = 60;
-            
-            // Responsive adjustments
-            if (newViewportWidth < 768) {
-                newHeaderHeight = 250;
-                newPaginationHeight = 80;
-            } else if (newViewportWidth < 992) {
-                newHeaderHeight = 220;
-                newPaginationHeight = 70;
-            }
-            
-            var newScrollHeight = Math.max(300, newViewportHeight - newHeaderHeight - newPaginationHeight);
-            
-            var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-            scrollBody.css('max-height', newScrollHeight + 'px');
-            
+            // Không cần thay đổi max-height nữa - CSS calc() tự động xử lý
             table.columns.adjust();
         }, 250);
     });
@@ -738,7 +705,16 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 
     try {
         var itemCount = paginatedData?.items?.length || 0;
-        console.log('📊 Updating DataTable with', itemCount, 'items');
+        var pageSize = paginatedData?.pageSize || 10;
+        console.log('📊 Updating DataTable with', itemCount, 'items, pageSize:', pageSize);
+
+        // Sync dropdown với pageSize từ server
+        var wrapper = $(table.table().container());
+        var dropdown = wrapper.find('.dt-page-length');
+        if (dropdown.length > 0 && dropdown.val() != pageSize.toString()) {
+            dropdown.val(pageSize.toString());
+            console.log('📊 Synced dropdown to:', pageSize);
+        }
 
         // Lưu scroll position
         var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
@@ -792,7 +768,6 @@ window.updateUserDataTableData = function (selector, paginatedData) {
                 var rowNode = table.row.add(rowData).node();
                 if (rowNode && userId) {
                     $(rowNode).attr('data-user-id', userId);
-                    console.log('📌 Set data-user-id:', userId, 'on row');
                 }
             });
         }
@@ -808,14 +783,7 @@ window.updateUserDataTableData = function (selector, paginatedData) {
             // Bind events SAU khi draw xong
             bindAllRowEvents(selector);
             
-            // Log các row IDs để debug
-            var rowIds = [];
-            $(selector).find('tbody tr[data-user-id]').each(function() {
-                rowIds.push($(this).attr('data-user-id'));
-            });
-            console.log('📋 Current row IDs in table:', rowIds.slice(0, 5), '... total:', rowIds.length);
-
-            console.log('✅ DataTable data updated and events bound');
+            console.log('✅ DataTable data updated, items:', itemCount);
         }, 100);
 
     } catch (error) {

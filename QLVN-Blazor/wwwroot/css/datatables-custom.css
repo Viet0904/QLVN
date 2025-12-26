@@ -60,9 +60,12 @@ table.dataTable thead > tr > td span.dt-column-order:after {
     line-height: 1 !important;
 }
 
-/* === FIXED HEIGHT & SCROLLABLE TABLE === */
+/* === AUTO HEIGHT & SCROLLABLE TABLE === */
+/* Table container tự động điều chỉnh chiều cao theo nội dung */
 .dataTables_wrapper {
     width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Container cho scroll */
@@ -70,70 +73,106 @@ table.dataTable thead > tr > td span.dt-column-order:after {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .dt-scroll-head {
     background: #f8f9fa !important;
     overflow: hidden !important;
+    flex-shrink: 0;
 }
 
-/* Scroll body - ngăn giật */
+/* ========================================
+   SCROLL BODY - AUTO HEIGHT WITH MAX LIMIT
+   Chiều cao tự động theo nội dung, có giới hạn max
+   ======================================== */
 .dt-scroll-body {
-    max-height: 400px;
+    /* KHÔNG dùng height cố định - chỉ dùng max-height */
+    height: auto !important;
+    min-height: unset !important;
+    max-height: calc(100vh - 320px) !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
 }
 
+/* Override inline style từ DataTables - QUAN TRỌNG */
+.dataTables_wrapper .dt-scroll .dt-scroll-body {
+    height: auto !important;
+    min-height: unset !important;
+}
+
+/* Override cho cả class dataTables_scrollBody (DataTables 1.x) */
 .dataTables_scrollBody {
     overflow-x: auto !important;
     overflow-y: auto !important;
+    height: auto !important;
+    min-height: unset !important;
 }
 
-/* Responsive height theo viewport */
-@media screen and (min-height: 900px) {
+/* Đảm bảo table bên trong không có min-height */
+.dt-scroll-body > table,
+.dataTables_scrollBody > table {
+    margin-bottom: 0 !important;
+}
+
+/* Responsive max-height theo viewport - DESKTOP */
+@media screen and (min-height: 1000px) {
     .dt-scroll-body {
-        max-height: 600px;
+        max-height: calc(100vh - 320px) !important;
+        height: auto !important;
     }
 }
 
-@media screen and (max-height: 700px) {
+@media screen and (min-height: 800px) and (max-height: 999px) {
     .dt-scroll-body {
-        max-height: 350px;
+        max-height: calc(100vh - 300px) !important;
+        height: auto !important;
     }
 }
 
-@media screen and (max-height: 500px) {
+@media screen and (min-height: 600px) and (max-height: 799px) {
     .dt-scroll-body {
-        max-height: 250px;
+        max-height: calc(100vh - 280px) !important;
+        height: auto !important;
     }
 }
 
-/* Responsive width */
+@media screen and (max-height: 599px) {
+    .dt-scroll-body {
+        max-height: calc(100vh - 250px) !important;
+        height: auto !important;
+    }
+}
+
+/* Responsive width - Mobile & Tablet */
 @media screen and (max-width: 1200px) {
     table.dataTable {
         font-size: 13px;
     }
 
-        table.dataTable > tbody > tr > th,
-        table.dataTable > tbody > tr > td {
-            padding: 6px 8px;
-        }
+    table.dataTable > tbody > tr > th,
+    table.dataTable > tbody > tr > td {
+        padding: 6px 8px;
+    }
 }
 
 @media screen and (max-width: 768px) {
+    .dt-scroll-body {
+        max-height: calc(100vh - 380px) !important;
+        height: auto !important;
+    }
+    
     table.dataTable {
         font-size: 12px;
     }
 
-        table.dataTable > tbody > tr > th,
-        table.dataTable > tbody > tr > td {
-            padding: 5px 6px;
-        }
-
-    .dt-scroll-body {
-        max-height: 250px;
+    table.dataTable > tbody > tr > th,
+    table.dataTable > tbody > tr > td {
+        padding: 5px 6px;
     }
 
     .dt-custom-toolbar {
@@ -151,9 +190,9 @@ table.dataTable thead > tr > td span.dt-column-order:after {
         width: 100%;
     }
 
-        .dt-search-wrapper input {
-            width: 100% !important;
-        }
+    .dt-search-wrapper input {
+        width: 100% !important;
+    }
 }
 
 /* === HEADER STYLING === */
@@ -262,9 +301,9 @@ table.dataTable tfoot th {
     padding: 8px 0;
 }
 
-    .dt-column-dropdown.show {
-        display: block;
-    }
+.dt-column-dropdown.show {
+    display: block;
+}
 
 .dt-dropdown-item {
     display: flex;
@@ -276,21 +315,21 @@ table.dataTable tfoot th {
     transition: background-color 0.15s ease;
 }
 
-    .dt-dropdown-item:hover {
-        background-color: #f1f3f4;
-        color: #01a9ac;
-    }
+.dt-dropdown-item:hover {
+    background-color: #f1f3f4;
+    color: #01a9ac;
+}
 
-    .dt-dropdown-item i {
-        margin-right: 10px;
-        font-size: 14px;
-        color: #666;
-        width: 16px;
-    }
+.dt-dropdown-item i {
+    margin-right: 10px;
+    font-size: 14px;
+    color: #666;
+    width: 16px;
+}
 
-    .dt-dropdown-item:hover i {
-        color: #01a9ac;
-    }
+.dt-dropdown-item:hover i {
+    color: #01a9ac;
+}
 
 .dt-dropdown-divider {
     height: 1px;
@@ -321,11 +360,11 @@ table.dataTable tfoot th {
     cursor: pointer;
 }
 
-    .dt-filter-type:focus {
-        border-color: #01a9ac;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
-    }
+.dt-filter-type:focus {
+    border-color: #01a9ac;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
+}
 
 .dt-dropdown-filter {
     padding: 8px 16px;
@@ -339,11 +378,11 @@ table.dataTable tfoot th {
     font-size: 13px;
 }
 
-    .dt-filter-input:focus {
-        border-color: #01a9ac;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
-    }
+.dt-filter-input:focus {
+    border-color: #01a9ac;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
+}
 
 .dt-clear-filter {
     color: #dc3545 !important;
@@ -352,25 +391,25 @@ table.dataTable tfoot th {
     padding-top: 12px !important;
 }
 
-    .dt-clear-filter:hover {
-        background-color: #ffeef0 !important;
-    }
+.dt-clear-filter:hover {
+    background-color: #ffeef0 !important;
+}
 
-    .dt-clear-filter i {
-        color: #dc3545 !important;
-    }
+.dt-clear-filter i {
+    color: #dc3545 !important;
+}
 
 .dt-dropdown-item.dt-hide-column {
     color: #dc3545;
 }
 
-    .dt-dropdown-item.dt-hide-column:hover {
-        background: #fff5f5;
-    }
+.dt-dropdown-item.dt-hide-column:hover {
+    background: #fff5f5;
+}
 
-    .dt-dropdown-item.dt-hide-column i {
-        color: #dc3545;
-    }
+.dt-dropdown-item.dt-hide-column i {
+    color: #dc3545;
+}
 
 /* === PAGINATION === */
 .dataTables_wrapper .dataTables_paginate .paginate_button {
@@ -379,17 +418,17 @@ table.dataTable tfoot th {
     border-radius: 4px;
 }
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: #01a9ac !important;
-        border-color: #01a9ac !important;
-        color: white !important;
-    }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #01a9ac !important;
+    border-color: #01a9ac !important;
+    color: white !important;
+}
 
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-        background: #e9ecef !important;
-        border-color: #ddd !important;
-        color: #333 !important;
-    }
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #e9ecef !important;
+    border-color: #ddd !important;
+    color: #333 !important;
+}
 
 .dataTables_wrapper .dataTables_filter input {
     border: 1px solid #ced4da;
@@ -425,9 +464,9 @@ table.dataTable tfoot th {
     border: 2px solid #f1f1f1;
 }
 
-    .dt-scroll-body::-webkit-scrollbar-thumb:hover {
-        background: #888;
-    }
+.dt-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
 
 .dt-scroll-body::-webkit-scrollbar-corner {
     background: #f1f1f1;
@@ -450,9 +489,9 @@ table.dataTable tbody tr.selected {
     background-color: rgba(1, 169, 172, 0.15) !important;
 }
 
-    table.dataTable tbody tr.selected:hover {
-        background-color: rgba(1, 169, 172, 0.25) !important;
-    }
+table.dataTable tbody tr.selected:hover {
+    background-color: rgba(1, 169, 172, 0.25) !important;
+}
 
 /* ==========================================
    CUSTOM DATATABLE STYLES - RESPONSIVE
@@ -469,12 +508,6 @@ table.dataTable tbody tr.selected {
 .dt-scroll {
     width: 100% !important;
     overflow-x: auto;
-}
-
-.dt-scroll-body {
-    overflow-x: auto !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
 }
 
 .dt-scroll-head {
@@ -534,11 +567,6 @@ table.dataTable tbody tr.selected {
     }
     
     /* Table adjustments cho mobile */
-    .dt-scroll-body {
-        max-height: calc(100vh - 350px) !important;
-        min-height: 300px !important;
-    }
-    
     table.dataTable {
         font-size: 13px !important;
     }
@@ -570,14 +598,16 @@ table.dataTable tbody tr.selected {
     }
     
     .dt-scroll-body {
-        max-height: calc(100vh - 320px) !important;
+        max-height: calc(100vh - 350px) !important;
+        height: auto !important;
     }
 }
 
 /* DESKTOP - từ 992px trở lên */
 @media (min-width: 992px) {
     .dt-scroll-body {
-        max-height: calc(100vh - 280px) !important;
+        max-height: calc(100vh - 320px) !important;
+        height: auto !important;
     }
 }
 
@@ -605,7 +635,7 @@ table.dataTable tbody tr.selected {
    COLUMN VISIBILITY & MENU STYLES - FIXED COLORS
    ======================================== */
 
-/* Column visibility button - ĐỔI MÀU TỪ ĐEN SANG XANH */
+/* Column visibility button */
 .colvis-btn-custom {
     display: flex;
     align-items: center;
@@ -788,6 +818,7 @@ table.dataTable tbody tr.selected {
     margin-bottom: 15px;
     border-bottom: 1px solid #e0e0e0;
     gap: 15px;
+    flex-shrink: 0;
 }
 
 .dt-toolbar-left,
@@ -838,6 +869,7 @@ table.dataTable tbody tr.selected {
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
+    flex-shrink: 0;
 }
 
 .dt-pagination-info {
@@ -909,27 +941,17 @@ table.dataTable .btn-sm {
 }
 
 /* ========================================
-   ROW ANIMATION EFFECTS - ADD/EDIT/DELETE - IMPROVED
+   ROW ANIMATION EFFECTS - ADD/EDIT/DELETE
    ======================================== */
 
-/* Animation cho row mới được thêm */
 @keyframes rowAddAnimation {
     0% {
         background-color: #d4edda !important;
         transform: scale(1.01);
         box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
     }
-    25% {
-        background-color: #c3e6cb !important;
-        box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
-    }
     50% {
-        background-color: #d4edda !important;
-        box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
-    }
-    75% {
         background-color: #c3e6cb !important;
-        box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
     }
     100% {
         background-color: transparent;
@@ -938,24 +960,14 @@ table.dataTable .btn-sm {
     }
 }
 
-/* Animation cho row được cập nhật */
 @keyframes rowUpdateAnimation {
     0% {
         background-color: #fff3cd !important;
         transform: scale(1.01);
         box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
     }
-    25% {
-        background-color: #ffeeba !important;
-        box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
-    }
     50% {
-        background-color: #fff3cd !important;
-        box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
-    }
-    75% {
         background-color: #ffeeba !important;
-        box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
     }
     100% {
         background-color: transparent;
@@ -964,17 +976,10 @@ table.dataTable .btn-sm {
     }
 }
 
-/* Animation cho row sắp xóa */
 @keyframes rowDeleteAnimation {
     0% {
         opacity: 1;
         background-color: #f8d7da !important;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.5;
-        background-color: #f5c6cb !important;
-        transform: scale(0.98) translateX(5px);
     }
     100% {
         opacity: 0.2;
@@ -982,70 +987,51 @@ table.dataTable .btn-sm {
     }
 }
 
-/* Class cho row animation */
 table.dataTable tbody tr.row-added {
     animation: rowAddAnimation 2.5s ease-out;
-}
-
-table.dataTable tbody tr.row-added td {
-    background-color: inherit !important;
 }
 
 table.dataTable tbody tr.row-updated {
     animation: rowUpdateAnimation 2s ease-out;
 }
 
-table.dataTable tbody tr.row-updated td {
-    background-color: inherit !important;
-}
-
 table.dataTable tbody tr.row-deleting {
     animation: rowDeleteAnimation 0.5s ease-out forwards;
 }
 
-/* Highlight styles - sử dụng với JS - FORCE IMPORTANT */
+/* Highlight styles */
 table.dataTable tbody tr.highlight-add,
 table.dataTable tbody tr.highlight-add:hover {
     background-color: #d4edda !important;
-    position: relative;
-    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-add td {
     background-color: #d4edda !important;
-    transition: background-color 0.3s ease;
 }
 
 table.dataTable tbody tr.highlight-update,
 table.dataTable tbody tr.highlight-update:hover {
     background-color: #fff3cd !important;
-    position: relative;
-    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-update td {
     background-color: #fff3cd !important;
-    transition: background-color 0.3s ease;
 }
 
 table.dataTable tbody tr.highlight-delete,
 table.dataTable tbody tr.highlight-delete:hover {
     background-color: #f8d7da !important;
     opacity: 0.7;
-    position: relative;
-    z-index: 10;
 }
 
 table.dataTable tbody tr.highlight-delete td {
     background-color: #f8d7da !important;
-    transition: all 0.3s ease;
 }
 
 /* ========================================
-   MODAL CHECKBOX STYLES - FIX ĐỔI MẬT KHẨU
+   MODAL CHECKBOX STYLES
    ======================================== */
 
-/* Custom checkbox fade style cho modal */
 #userModal .form-check {
     padding-left: 0;
 }
@@ -1057,7 +1043,6 @@ table.dataTable tbody tr.highlight-delete td {
     cursor: pointer;
     border: 2px solid #01a9ac;
     border-radius: 4px;
-    vertical-align: middle;
 }
 
 #userModal .form-check-input:checked {
@@ -1065,71 +1050,11 @@ table.dataTable tbody tr.highlight-delete td {
     border-color: #01a9ac;
 }
 
-#userModal .form-check-label {
-    cursor: pointer;
-    vertical-align: middle;
-    margin-bottom: 0;
-    display: inline-flex;
-    align-items: center;
-}
-
-/* Alternative: checkbox-fade style giống template */
-.checkbox-fade.fade-in-primary {
-    display: inline-block;
-}
-
-.checkbox-fade.fade-in-primary label {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    margin-bottom: 0;
-}
-
-.checkbox-fade.fade-in-primary input[type="checkbox"] {
-    display: none;
-}
-
-.checkbox-fade.fade-in-primary .cr {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #e9ecef;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 10px;
-    transition: all 0.3s ease;
-    background: #fff;
-}
-
-.checkbox-fade.fade-in-primary input[type="checkbox"]:checked + .cr {
-    background: #01a9ac;
-    border-color: #01a9ac;
-}
-
-.checkbox-fade.fade-in-primary .cr-icon {
-    font-size: 12px;
-    color: #fff;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.checkbox-fade.fade-in-primary input[type="checkbox"]:checked + .cr .cr-icon {
-    opacity: 1;
-}
-
-/* Password change checkbox specific */
 #changePasswordCheck {
     width: 20px;
     height: 20px;
     accent-color: #01a9ac;
     cursor: pointer;
-}
-
-#changePasswordCheck + label,
-label[for="changePasswordCheck"] {
-    cursor: pointer;
-    user-select: none;
 }
 
 /* ========================================
@@ -1143,11 +1068,6 @@ label[for="changePasswordCheck"] {
 .font-header {
     font-weight: 600;
     font-size: 16px;
-}
-
-/* Smooth transitions */
-* {
-    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* ========================================
