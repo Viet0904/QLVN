@@ -1,5 +1,5 @@
 ﻿@inject IJSRuntime JS
-@implements IAsyncDisposable
+
 
 <div id="styleSelector">
 
@@ -65,6 +65,10 @@
                                 <input type="checkbox"
                                        @bind="FixedSidebar"
                                        @bind:after="OnFixedSidebarChanged" />
+
+
+
+
                                 <span class="cr">
                                     <i class="cr-icon feather icon-check txt-success f-w-600"></i>
                                 </span>
@@ -76,9 +80,7 @@
                     <li class="theme-option">
                         <div class="checkbox-fade fade-in-primary">
                             <label>
-                                <input type="checkbox"
-                                       @bind="FixedHeader"
-                                       @bind:after="OnFixedHeaderChanged" />
+                                <input type="checkbox" id="header-position" checked>
                                 <span class="cr">
                                     <i class="cr-icon feather icon-check txt-success f-w-600"></i>
                                 </span>
@@ -273,17 +275,7 @@
 
 @code {
     bool FixedSidebar = true;
-    bool FixedHeader = true;
     string MenuType = "st6";
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Khởi tạo style selector toggle
-            await JS.InvokeVoidAsync("themeInterop.initStyleSelector");
-        }
-    }
 
     async Task OnMenuTypeChanged(ChangeEventArgs e)
     {
@@ -295,6 +287,7 @@
         );
     }
 
+
     async Task OnFixedSidebarChanged()
     {
         await JS.InvokeVoidAsync(
@@ -303,24 +296,7 @@
         );
     }
 
-    async Task OnFixedHeaderChanged()
-    {
-        await JS.InvokeVoidAsync(
-            "themeInterop.setHeaderFixed",
-            FixedHeader
-        );
-    }
 
-    public async ValueTask DisposeAsync()
-    {
-        // Cleanup khi component bị dispose
-        try
-        {
-            await JS.InvokeVoidAsync("eval", "$(document).off('click.styleSelector'); $('.selector-toggle').off('click');");
-        }
-        catch
-        {
-            // Ignore errors during dispose
-        }
-    }
+
+
 }

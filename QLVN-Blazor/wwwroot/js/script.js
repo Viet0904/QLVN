@@ -48,21 +48,10 @@ $(document).ready(function () {
         setTop: "10px",
         height: "calc(100vh - 440px)",
     });
-    
-    // DISABLED: mCustomScrollbar cho main-menu - dùng native scroll thay vì plugin
-    // Lý do: scroll chậm ở cuối menu do plugin xử lý
-    // $(".main-menu").mCustomScrollbar({
-    //     setTop: "10px",
-    //     setHeight: "calc(100% - 80px)",
-    // });
-    
-    // Sử dụng native scroll cho main-menu thay thế
-    $(".main-menu").css({
-        'overflow-y': 'auto',
-        'overflow-x': 'hidden',
-        'height': 'calc(100vh - 80px)'
+    $(".main-menu").mCustomScrollbar({
+        setTop: "10px",
+        setHeight: "calc(100% - 80px)",
     });
-
     /*chatbar js start*/
 
     /*chat box scroll*/
