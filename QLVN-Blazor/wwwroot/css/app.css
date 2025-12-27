@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -104,7 +104,7 @@ code {
 
 
 
-/* Notification ph?i n?m tr�n Modal */
+/* Notification ph?i n?m trên Modal */
 .custom-notification,
 [class*="growl"],
 .alert.growl-animated {
@@ -125,3 +125,5 @@ code {
 .modal {
     z-index: 1050 !important;
 }
+
+

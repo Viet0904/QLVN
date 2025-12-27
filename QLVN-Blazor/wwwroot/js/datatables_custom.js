@@ -49,7 +49,7 @@ window.initUserDataTable = function (selector) {
         lengthChange: false,
         scrollY: 'calc(100vh - 320px)', // Sử dụng calc thay vì auto
         scrollX: true,
-        scrollCollapse: true, // QUAN TRỌNG: true để table co lại khi ít dữ liệu
+        scrollCollapse: true, //true để table co lại khi ít dữ liệu
         autoWidth: false,
         fixedColumns: false,
         deferRender: true,
@@ -173,7 +173,7 @@ window.initUserDataTable = function (selector) {
     $(window).off('resize.dtUserResize').on('resize.dtUserResize', function() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function() {
-            // Không cần thay đổi max-height nữa - CSS calc() tự động xử lý
+            
             table.columns.adjust();
         }, 250);
     });
